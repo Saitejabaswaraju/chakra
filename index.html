@@ -712,7 +712,7 @@ function vOv(){
  const fl=fleetSize();
  const ms=[['Scheduled services','svcS'],['Operated services','svcO'],['Scheduled trips','schT'],['Operated trips','opT'],['Loss trips','lossT'],['Scheduled KMs','sKm'],['Operated KMs','oKm'],['Loss KMs','lossKm'],['Odo KMs','odo'],['Actual − Odo','diff'],['Unique buses operated','buses']],add=['schT','opT','lossT','sKm','oKm','lossKm','odo','diff'];
  const shRows=ms.map(([l,f])=>({l,f,a:F1[f],b:F2[f],u:FU[f],t:A[f]}));
- const shT=tbl('sh',[['Metric',r=>r.l],['First (23:50–11:50)',r=>r.a],['Second (11:50–23:50)',r=>r.b],...(FU.n?[['Unknown shift',r=>r.u]]:[]),['Combined',r=>r.t],['Reconciles',r=>add.includes(r.f)?(Math.abs(r.a+r.b+r.u-r.t)<.01?'✓':'✗ Mismatch'):'-']],shRows);
+ const shT=tbl('sh',[['Metric',r=>r.l],['First (23:50–11:50)',r=>r.a],['Second (11:50–23:50)',r=>r.b],...(FU.n?[['Unknown shift',r=>r.u]]:[]),['for the day',r=>r.t],['Reconciles',r=>add.includes(r.f)?(Math.abs(r.a+r.b+r.u-r.t)<.01?'✓':'✗ Mismatch'):'-']],shRows);
  const dd=DS.dest(rs).data.sort((a,b)=>b.lossKm-a.lossKm),top=dd[0];
  aft(()=>charts(rs,k,F1,F2,fl));
  const pc=(a,b)=>b>0?Math.max(0,Math.min(100,Math.round(a/b*100))):0,pb=(l,a,b,c)=>`<div class=pbr style="--c:${c}"><span>${l}</span><b>${b>0?pc(a,b)+'%':'–'}</b><u style="--w:${pc(a,b)}%"></u></div>`,nv=rs.filter(r=>r.is.length).length;
@@ -762,10 +762,34 @@ function vSvc(){const d=DS.svc(rows());return'<h3>Service register</h3>'+tbl('sv
 function vBus(){const d=DS.bus(rows()),x=d.data,op=x.filter(k=>k.opLegs),hi=[...op].sort((a,b)=>b.oKm-a.oKm)[0],lo=[...op].sort((a,b)=>a.oKm-b.oKm)[0];
  return`<h3>Bus-wise performance</h3><div class="warn plain">Highest operated: ${hi?esc(hi.l[0].bus)+' ('+n0(hi.oKm)+' km)':'–'} · Lowest operated: ${lo?esc(lo.l[0].bus)+' ('+n0(lo.oKm)+' km)':'–'} · Zero operation: ${esc(x.filter(k=>!k.opLegs).map(k=>k.l[0].bus).join(', ')||'none')} · High km loss (top 5): ${esc([...x].sort((a,b)=>b.lossKm-a.lossKm).slice(0,5).map(k=>k.l[0].bus+' '+n0(k.lossKm)).join(', '))} · Odometer discrepancies > ${CFG.tol} km: ${x.filter(k=>Math.abs(k.diff)>CFG.tol).length}</div>`+tbl('bus',d.cols,x)}
 function vDrv(){const d=DS.drv(rows());return'<h3>Driver-wise report (km counted only on the rows each driver is entered against)</h3>'+tbl('drv',d.cols,d.data)}
+/* Loss tab: drill-down details behind the four summary cards */
+const LDC=[['Date',r=>dmy(r.date)],['Row',r=>String(r.i)],['Service',r=>r.svc],['Bus',r=>r.bus],['Driver',r=>r.drv||'—'],['Dest',r=>r.dest],['Dir',r=>r.dir],['Sch',r=>hm(r.sT)],['Sch Km',r=>r.sKm??0],['Act Km',r=>r.aKm??0],['Loss Km',r=>lk(r)],['Leg status',r=>!r.op?'Not operated':(r.aKm<(r.sKm||0)-1?'Partial':'Operated')],['Reason',r=>r.reason||'(not recorded)']];
+function lossDr(kind){
+ const rs=rows(),k=K(rs),sv=DS.svc(rs),open=r=>EntReport.open('svc',r.svc);
+ let title,note,tb;
+ if(kind==='no'||kind==='part'){
+  const d=sv.data.filter(x=>kind==='no'?x.st==='Not Operated':/^Partially/.test(x.st)).sort((a,b)=>b.lossKm-a.lossKm);
+  title=kind==='no'?'Services not operated':'Partially operated services';
+  note=`<b>${d.length}</b> service(s) · <b>${n0(sum(d,x=>x.lossKm))}</b> km lost · <b>${sum(d,x=>x.lossT)}</b> loss trip(s). Click a row to open that service's full report.`;
+  tb=d.length?tbl('ld',sv.cols,d,x=>EntReport.open('svc',x.l[0].svc)):'<p class=mut>None.</p>';
+ }else if(kind==='trips'){
+  const l=rs.filter(r=>r.pu&&!r.pu.done).sort((a,b)=>a.svc<b.svc?-1:a.svc>b.svc?1:a.i-b.i);
+  title='Loss trips – legs of round trips not completed';
+  note=`<b>${k.lossT}</b> round trip(s) not completed (<b>${l.length}</b> leg(s) listed, including the operated half of a one-sided trip). Click a row to open that service's report.`;
+  tb=l.length?tbl('ld',LDC,l,open):'<p class=mut>None.</p>';
+ }else{
+  const l=rs.filter(r=>lk(r)>0).sort((a,b)=>lk(b)-lk(a)),rz=Object.entries(by(l,r=>r.reason||'(not recorded)')).map(([a,x])=>[a,sum(x,lk)]).sort((x,y)=>y[1]-x[1]).slice(0,4);
+  title='Loss KMs – records with km loss';
+  note=`<b>${n0(k.lossKm)}</b> km lost across <b>${l.length}</b> record(s)${rz.length?' · top reasons: '+rz.map(x=>esc(x[0])+' ('+n0(x[1])+' km)').join('; '):''}. Sorted by highest loss; click a row to open that service's report.`;
+  tb=l.length?tbl('ld',LDC,l,open):'<p class=mut>None.</p>';
+ }
+ T.ld&&(T.ld.s=-1);
+ show(`<h3>${title}</h3><div class="warn plain">${note}</div>`+tb);
+}
 function vLoss(){const rs=rows(),k=K(rs),sv=DS.svc(rs).data,c=s=>sv.filter(x=>x.st===s).length,lr=rs.filter(r=>!r.op||lk(r)>0),
  rz=Object.entries(by(lr,r=>r.reason||'Reason Not Recorded')).map(([a,l])=>({a,n:l.length,km:sum(l,lk)})).sort((x,y)=>y.km-x.km),LC=[KC[2],KC[3],KC[4],KC[5]];
  const g=(id,f,lab)=>{const d=gd(rs,f,[[lab,k=>f(k.l[0])||'(missing)'],...LC]);d.data.sort((a,b)=>b.lossKm-a.lossKm);return tbl(id,d.cols,d.data)};
- return`<div class=cards><div class=card><small>Services not operated</small><b>${c('Not Operated')}</b></div><div class=card><small>Partially operated</small><b>${c('Partially Operated')+c('Partially Completed Round Trip')}</b></div><div class=card><small>Loss trips</small><b>${k.lossT}</b></div><div class=card><small>Loss KMs</small><b>${n0(k.lossKm)}</b></div></div>
+ return`<div class=cards><div class=card onclick="lossDr('no')" title="Click for details"><small>Services not operated</small><b>${c('Not Operated')}</b><i>click for details</i></div><div class=card onclick="lossDr('part')" title="Click for details"><small>Partially operated</small><b>${c('Partially Operated')+c('Partially Completed Round Trip')}</b><i>click for details</i></div><div class=card onclick="lossDr('trips')" title="Click for details"><small>Loss trips</small><b>${k.lossT}</b><i>click for details</i></div><div class=card onclick="lossDr('km')" title="Click for details"><small>Loss KMs</small><b>${n0(k.lossKm)}</b><i>click for details</i></div></div>
  <h3>Reasons recorded in DOR</h3>${tbl('rz',[['Reason',r=>r.a],['Records',r=>r.n],['Loss KMs',r=>r.km]],rz)}<h3>Shift-wise</h3>${g('l1',r=>r.shift,'Shift')}<h3>Destination-wise</h3>${g('l2',r=>r.dest,'Destination')}<h3>Route / service-wise</h3>${g('l3',r=>r.svc,'Service')}<h3>Bus-wise</h3>${g('l4',r=>r.bus,'Bus')}`}
 function vOdo(){const fl=k=>!k.opLegs&&!k.odo?'No operation':k.noOdo&&!k.odo?'Missing Odometer':Math.abs(k.diff)>CFG.abn?'Abnormal':k.diff>CFG.tol?'Positive (Act > Odo)':k.diff<-CFG.tol?'Negative (Act < Odo)':'Within tolerance';
  const d=gd(rows(),r=>r.bus||'(missing)',[['Bus',k=>k.l[0].bus||'(missing)'],['Sched KMs',k=>k.sKm],['Op KMs (all)',k=>k.oKm],['Op KMs (rows with odo)',k=>sum(k.l.filter(r=>r.odo!=null),r=>r.aKm)],['Odo KMs',k=>k.odo],['Act−Odo',k=>k.diff],['Op rows w/o odo',k=>k.noOdo],['Flag',fl]]);
@@ -1092,7 +1116,7 @@ function consDates(){const s=new Set();CONS.deps.forEach(id=>(APP.reports[id]||[
 function renderCons(){
  const dates=consDates();if(CONS.dates===null)CONS.dates=new Set(dates);else CONS.dates=new Set([...CONS.dates].filter(x=>dates.includes(x)));
  const sel=[...CONS.dates];let pairs=0;CONS.deps.forEach(id=>sel.forEach(dt=>{if((APP.reports[id]||[]).some(r=>r.date===dt&&r.status==='Processed'))pairs++}));
- amodal(`<h3>Consolidated multi-depot report</h3><p class="mut">Only the depots and dates ticked below are combined. Depots are never merged into one another — each depot is calculated separately, then listed side by side.</p>
+ amodal(`<h3>Consolidated multi-depot report</h3><p class="mut">Only the depots and dates ticked below are for the day. Depots are never merged into one another — each depot is calculated separately, then listed side by side.</p>
  <div class="cols2"><fieldset><legend>Depots</legend>${APP.depots.map(d=>{const has=(APP.reports[d.id]||[]).some(r=>r.status==='Processed');return `<label class="ck"><input type="checkbox" data-cons="dep" value="${esc(d.id)}" ${CONS.deps.has(d.id)?'checked':''} ${has?'':'disabled'}> ${esc(d.name)}${has?'':' <em>(no report)</em>'}</label>`}).join('')}</fieldset>
  <fieldset><legend>Dates <button class="lnk" data-act="consall">all</button> <button class="lnk" data-act="consnone">none</button></legend><div class="dlist">${dates.map(dt=>`<label class="ck"><input type="checkbox" data-cons="date" value="${dt}" ${CONS.dates.has(dt)?'checked':''}> ${dmy(dt)}</label>`).join('')||'<em>Select a depot</em>'}</div></fieldset></div>
  <p><b>${pairs}</b> depot-date report${pairs===1?'':'s'} selected.</p>
@@ -1242,6 +1266,141 @@ init();
  body.print-ent #printArea{page:ent}
  #printArea .er .kg{grid-template-columns:repeat(6,1fr)}#printArea .er .kc b{font-size:14px}
  #printArea .er h4,#printArea .er .tw{break-inside:avoid-page}
+}
+</style>
+<style id="responsive-layer">
+/* ===== RESPONSIVE LAYER (phone / tablet / laptop / large screens) — appended last so it overrides earlier rules ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+img,canvas,svg{max-width:100%}
+body{overflow-x:clip}
+.grid{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+#view .grid:not(.ovch){grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
+.er .pf{grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))}
+.tw{-webkit-overflow-scrolling:touch}
+
+/* small laptops: let the filter bar wrap instead of overflowing */
+@media(max-width:1280px){
+ #flt{flex-wrap:wrap}
+ #flt #fq{flex:1 1 220px}
+}
+
+/* ---------- tablet & phone: no sidebar, tabs become a sticky scrollable strip ---------- */
+@media(max-width:1024px){
+ main{display:block;padding:8px 10px}
+ main>#tabs{display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+  position:sticky;top:0;z-index:6;margin:6px 0;padding:6px;gap:4px;background:#fff;border-radius:14px;box-shadow:var(--sh)}
+ #tabs button{flex:0 0 auto;white-space:nowrap;color:var(--navy);text-shadow:none}
+ #tabs button.on{color:#fff}
+ .dbar{flex-wrap:wrap;padding:6px 10px;gap:8px}
+ .dbar b{white-space:normal;font-size:15px;flex:1 1 200px}
+ .dbar .info{flex:1 1 100%;width:100%;margin:0;white-space:normal;overflow:visible}
+ .esr{margin-left:0;width:100%}
+ .esr input{flex:1 1 auto;width:auto;min-width:0}
+ #flt{flex-wrap:wrap}
+ .ovmid{grid-template-columns:1fr}
+ .ovmid .tw{overflow-x:auto}
+ .ovmid th,.ovmid td{padding:6px 9px;font-size:11px}
+ .ovch .cv{height:240px}
+ #view .ovch{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .app-h nav{margin-left:0}
+}
+
+/* ---------- phone ---------- */
+@media(max-width:700px){
+ .app-h{gap:8px;padding:8px 12px}
+ .logo{width:34px;height:34px;font-size:12px}
+ .ttl h1{font-size:17px}
+ .ttl small{font-size:9.5px;letter-spacing:.06em}
+ .app-h nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%}
+ .app-h .nb{padding:7px 4px;font-size:11.5px;min-height:38px;white-space:normal;line-height:1.15}
+ #home{padding:10px}
+ .home-top{align-items:stretch}
+ .home-tools{flex-direction:column;align-items:stretch;gap:8px;width:100%}
+ .gd{flex-wrap:wrap}.gd input{flex:1 1 140px}
+ #gapply,#q{width:100%;min-width:0}
+ .dcard{padding:12px}
+ .dh h3{font-size:15px}
+ .dact button{flex:1 1 calc(50% - 6px)}
+ .chips{gap:5px}
+ .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mt b{font-size:19px}
+ .dbar .nb{min-height:34px}
+ #actbar{gap:6px}
+ #actbar button,#actbar .btn{flex:1 1 auto;justify-content:center;min-height:34px;font-size:12px}
+ .esr{flex-wrap:wrap}.esr input{flex:1 1 100%}.esr button{flex:1 1 100%}
+ #flt select,#flt input:not([type=checkbox]){flex:1 1 45%;width:auto!important;min-width:0}
+ #flt #fq{flex:1 1 100%}
+ .ovg .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .ovg .card b{font-size:clamp(15px,5vw,19px)}
+ .ovg .card i{white-space:normal}
+ #view .ovch{grid-template-columns:1fr}
+ .ovch .cv{height:230px}
+ .mpr{grid-template-columns:1fr}
+ .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .card b{font-size:22px}
+ .cv{height:260px}
+ .cols2{grid-template-columns:1fr}
+ /* modals: near full-screen sheets */
+ .modal{padding:0;align-items:flex-end}
+ .mb{width:100%;max-height:94vh;padding:12px;border-radius:14px 14px 0 0}
+ .mb:has(.er){width:100%}
+ .ehd{top:-12px}
+ .ptabs{gap:4px}.pt{padding:5px 10px;font-size:12.5px}
+ .pc{flex-wrap:wrap}
+ .er h2{font-size:16px}
+ .er .kg{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .zwrap{height:60vh}
+ #toasts{left:10px;right:10px;bottom:10px;max-width:none}
+}
+@media(max-width:380px){
+ .ttl h1{font-size:15px}
+ .app-h .nb{font-size:10.5px}
+ .dact button{flex:1 1 100%}
+}
+
+/* ---------- touch devices: bigger tap targets, no iOS auto-zoom on inputs ---------- */
+@media(pointer:coarse){
+ button,.btn,select,input:not([type=checkbox]){min-height:40px}
+ input:not([type=checkbox]),select,textarea,#flt select,#flt input:not([type=checkbox]){font-size:16px}
+ .chip{min-height:32px}
+ .zb{width:30px;min-height:30px;font-size:15px;opacity:1}
+ .ck input,#flt input[type=checkbox]{width:18px;height:18px}
+ #tabs button{min-height:40px}
+}
+
+/* very large / wide monitors: keep content readable */
+@media(min-width:2000px){
+ #home{max-width:2000px}
+}
+
+/* ===== PRINT / PDF FIX: tables must wrap inside the page, never be clipped (appended last) ===== */
+@media print{
+ @page{size:A4 landscape;margin:8mm}
+ @page ent{size:A4 landscape;margin:8mm}
+ html,body{height:auto!important;width:auto!important;overflow:visible!important;background:#fff!important}
+ body,body.ovf{display:block!important;font-size:9px}
+ #depotView{display:block!important}
+ main,.dcol{display:block!important;overflow:visible!important;height:auto!important;max-width:none!important;margin:0!important;padding:0!important}
+ #view{position:static!important;min-height:0!important;height:auto!important}
+ .ovg{position:static!important;display:flex!important;flex-direction:column;gap:6px}
+ .ovmid{display:block!important}.ovmid>.pn{margin-bottom:6px}
+ .pn,.dcol,.cv,.card{box-shadow:none!important}
+ .cards,.ovg .cards{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+ #view .ovch{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .ovch .cv,.cv{height:200px!important;break-inside:avoid;page-break-inside:avoid}
+ canvas{max-width:100%!important}
+ /* tables: no horizontal scroll box, wrap text, repeat header on each page, never split a row */
+ .tw,.ovmid .tw,.zt{overflow:visible!important;max-height:none!important;border:1px solid #cbd5e1!important;border-radius:0!important;box-shadow:none!important}
+ table,#printArea table,.ovmid table{width:100%!important;max-width:100%!important;table-layout:auto!important;border-collapse:collapse!important;font-size:7.5px!important}
+ th,td,.ovmid th,.ovmid td,#printArea th,#printArea td{white-space:normal!important;word-break:normal;overflow-wrap:anywhere;padding:2px 3px!important;font-size:7.5px!important;line-height:1.25;border:1px solid #cbd5e1!important;position:static!important;box-shadow:none!important}
+ th{text-transform:none!important;letter-spacing:0!important;background:#0f2a5f!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ td,tbody tr td:first-child,tbody tr:nth-child(even) td:first-child{background:#fff!important}
+ tbody tr:nth-child(even) td{background:#f3f6fb!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ thead{display:table-header-group}
+ tr{break-inside:avoid;page-break-inside:avoid}
+ h3,h4{break-after:avoid;page-break-after:avoid}
+ .pg,.zb,.np{display:none!important}
+ .warn,.emptybox,details{break-inside:avoid}
 }
 </style>
 <script>
