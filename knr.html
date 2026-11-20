@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CHAKRA E-TRANS – Centralized Transport Operations Dashboard</title>
+<style>
+/* CHAKRA E-TRANS — navy & white theme */
+:root{--navy:#132b66;--navy2:#1d3c8f;--bg:#f4f6f9;--c:#fff;--t:#1b2530;--m:#5d6b7a;--b:#dde3ea;--p:#132b66;--ok:#17803d;--bad:#c0392b;--w:#b7791f;
+--bd2:#cbd5e1;--hd:#132b66;--hdt:#e8eef8;--zebra:#f8fafc;--hov:#e8eef8}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;font:14px/1.4 system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--t)}
+[hidden]{display:none!important}
+button,.btn,select,input{font:inherit;padding:6px 10px;border:1px solid var(--b);border-radius:6px;background:var(--c);color:var(--t)}
+button,.btn{cursor:pointer;transition:background .12s,border-color .12s}
+button:hover:not(:disabled),.btn:hover{border-color:var(--navy)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-within{outline:2px solid var(--navy2);outline-offset:1px}
+.pri{background:var(--p);color:#fff;border-color:var(--p)}
+.pri:hover:not(:disabled){background:var(--navy2)}
+.danger{color:var(--bad)}
+.mut{color:var(--m)}
+/* ---------- header ---------- */
+.app-h{background:var(--navy);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:38px;height:38px;border:2px solid #fff;border-radius:8px;display:grid;place-items:center;font-weight:800;letter-spacing:.5px}
+.ttl h1{margin:0;font-size:22px;letter-spacing:.06em}
+.ttl small{display:block;font-size:11.5px;letter-spacing:.14em;opacity:.85}
+.app-h nav{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.nb{background:transparent;color:#fff;border:1px solid #ffffff80;border-radius:6px;padding:7px 14px}
+.nb:hover:not(:disabled){background:#ffffff1f;border-color:#fff}
+.nb.dark{color:var(--navy);border-color:var(--navy)}
+.nb.dark:hover:not(:disabled){background:#132b6614;border-color:var(--navy)}
+#depSel option{color:#1b2530;background:#fff}
+#banner .warn{margin:0;border-radius:0}
+.meta{color:var(--m);font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:11.5px;padding:3px 9px;border-radius:99px;display:inline-flex;align-items:center;gap:5px;background:#fff}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--bd2)}
+.chip.ok i{background:var(--ok)}.chip.none i{background:#c9d1da}
+.chip em{font-style:normal;color:var(--m)}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}.chip.on em{color:#cfd9f0}
+.chip.all{font-weight:600}
+/* ---------- depot dashboard ---------- */
+#depotView{display:flex;flex-direction:column;animation:fade .18s ease}
+@keyframes fade{from{opacity:.4}to{opacity:1}}
+.dbar{display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid var(--b);background:#fff;flex-wrap:wrap}
+.dbar b{color:var(--navy);font-size:15px}
+main{padding:12px 16px;max-width:1500px;width:100%;margin:0 auto}
+.info{color:var(--m);font-size:12.5px;margin:2px 0 6px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0}.tabs button.on{background:var(--p);color:#fff;border-color:var(--p)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0}
+.card{background:var(--c);border:1px solid var(--b);border-radius:8px;padding:10px;cursor:pointer}
+.card:hover{border-color:var(--navy)}
+.card small{color:var(--m);display:block}.card b{font-size:22px}.card i{display:block;font-size:11px;color:var(--m);font-style:normal}
+h3{margin:18px 0 6px;font-size:15px}
+.tw{overflow-x:auto;background:var(--c);border:1px solid var(--bd2);border-radius:8px;box-shadow:0 1px 2px #0f172a0a}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 9px;border:1px solid var(--bd2);text-align:left;white-space:nowrap}
+th{cursor:pointer;background:var(--hd);color:var(--hdt);font-weight:650;font-size:11px;letter-spacing:.03em;text-transform:uppercase;text-align:center;position:sticky;top:0;border-color:#0a1a3a;user-select:none}
+th:hover{filter:brightness(1.15)}
+td{text-align:center;font-variant-numeric:tabular-nums}
+td:first-child{text-align:left;font-weight:600}
+td.n{text-align:right}
+tbody tr:nth-child(even) td{background:var(--zebra)}
+tr.ck{cursor:pointer}tr.ck:hover td{background:var(--hov)}
+.pg{padding:8px 10px;color:var(--m);font-size:12px;border-top:1px solid var(--bd2)}.pg button{padding:1px 8px}
+.s-ok{color:var(--ok);font-weight:600}.s-bad{color:var(--bad);font-weight:600}.s-w{color:var(--w);font-weight:600}
+.cv{background:var(--c);border:1px solid var(--b);border-radius:8px;padding:8px;height:280px}
+.cv canvas{max-width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.grid .cv{min-width:0}
+#view .grid{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.warn{background:#fff4e0;color:#6b4500;border:1px solid #f0c36d;border-radius:6px;padding:8px;margin:6px 0}
+.warn.plain{background:var(--c);color:var(--t);border-color:var(--b)}
+.mg{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px;margin-top:8px}.mg label{font-size:12px;color:var(--m)}.mg select{width:100%}
+details{background:var(--c);border:1px solid var(--b);border-radius:8px;padding:8px 10px}
+.emptybox{background:#fff;border:1px dashed var(--bd2);border-radius:12px;padding:36px 16px;text-align:center;color:var(--m)}
+.emptybox strong{display:block;font-size:17px;color:var(--navy);margin-bottom:6px}
+.emptybox .chips{justify-content:center}
+/* ---------- modals, toasts, busy ---------- */
+.modal{display:none;position:fixed;inset:0;background:#0b1530a8;align-items:center;justify-content:center;z-index:9;padding:8px}
+.mb{background:var(--bg);padding:16px;border-radius:10px;width:min(1100px,96vw);max-height:90vh;overflow:auto}
+.mb h3:first-child{margin-top:0}
+.mact{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.form{display:grid;gap:10px;max-width:560px}.form label{display:grid;gap:3px;font-size:12.5px;font-weight:600;color:var(--navy)}.form small{font-weight:400;color:var(--m)}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+fieldset{border:1px solid var(--b);border-radius:8px;background:#fff;padding:8px 10px;margin:0}
+legend{font-weight:600;color:var(--navy);padding:0 4px}
+.ck{display:flex;align-items:center;gap:6px;padding:2px 0}.ck input{padding:0}
+.dlist{max-height:220px;overflow:auto}
+.lnk{border:0;background:none;color:var(--navy2);padding:0 4px;text-decoration:underline;font-size:12px}
+.acts{white-space:nowrap}
+#busy{display:none;position:fixed;inset:0;background:#0b1530a8;color:#fff;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-size:16px;z-index:20}
+.spin{width:38px;height:38px;border:4px solid #ffffff55;border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#toasts{position:fixed;right:14px;bottom:14px;display:flex;flex-direction:column;gap:8px;z-index:30;max-width:min(420px,calc(100vw - 28px))}
+.toast{background:#fff;border-left:5px solid var(--ok);box-shadow:0 4px 16px #0003;border-radius:6px;padding:10px 12px;animation:fade .15s ease}
+.toast.err{border-color:var(--bad)}.toast.warn{border-color:var(--w)}
+#printArea{display:none}
+/* ---------- responsive ---------- */
+@media(max-width:700px){
+ .ttl h1{font-size:18px}.app-h{padding:10px 12px}.app-h nav{margin-left:0;width:100%}
+ .cols2{grid-template-columns:1fr}
+ main{padding:8px}
+ .tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.tabs button{white-space:nowrap}
+ .cards{grid-template-columns:repeat(2,1fr)}
+}
+/* ---------- print (A4) ---------- */
+@media print{
+ .np,.app-h{display:none!important}
+ @page{size:A4;margin:10mm}
+ body{font-size:10px;background:#fff}
+ .modal,#busy,#toasts{display:none!important}
+ #depotView{display:block!important}
+ .tw{overflow:visible}.cv{height:220px;break-inside:avoid}
+ th,tbody tr:nth-child(even) td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ body.print-cons #depotView{display:none!important}
+ body.print-cons #printArea{display:block}
+ #printArea h1{font-size:16px;color:var(--navy)}#printArea h2{font-size:13px;color:var(--navy)}
+ #printArea table{font-size:8.5px}#printArea th{cursor:default;position:static}#printArea td.n{text-align:right}
+}
+
+/* ===== UI REFRESH (reference-matched layer; appended last so it overrides) ===== */
+:root{--navy:#0f2a5f;--navy2:#1e56c8;--bg:#eaf0f8;--b:#e1e8f2;--bd2:#d5deea;--hd:#0f2a5f;--rad:14px;--sh:0 1px 3px #0f2a5f14,0 4px 14px #0f2a5f0d}
+body{background:var(--bg);font:13.5px/1.4 "Segoe UI",system-ui,Roboto,sans-serif}
+button,select,input,.btn{border-radius:10px;border-color:var(--bd2);min-height:34px}
+select,input:not([type=checkbox]){background:#fff}
+/* header */
+.app-h{background:linear-gradient(100deg,#0a1f4d,#12347a 60%,#1b4aa6);padding:14px 24px;gap:16px}
+.logo{width:44px;height:44px;border-radius:50%;border-width:3px}
+.ttl{display:flex;align-items:center;gap:14px}
+.ttl h1{font-size:24px;letter-spacing:.04em}
+.ttl small{display:block;font-size:12px;letter-spacing:.1em;opacity:.9;border-left:2px solid #ffffff55;padding-left:12px;margin-left:2px}
+.nb{background:#ffffff1a;border:1px solid #ffffff40;border-radius:12px;padding:8px 16px;font-weight:600}
+.nb.dark{background:#fff;color:var(--navy);border-color:var(--bd2)}
+/* depot view: tabs become left sidebar on desktop */
+.dbar{background:#fff;box-shadow:var(--sh);border:0;padding:10px 24px}
+.dbar b{font-size:18px}
+main{max-width:1700px;padding:16px 24px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:0 18px;align-items:start}
+main>*{grid-column:2;min-width:0}
+main>#tabs{grid-column:1;grid-row:1/span 30;position:sticky;top:12px;flex-direction:column;flex-wrap:nowrap;gap:4px;margin:8px 0;padding:10px;background:linear-gradient(180deg,#0a1f4d,#12347a);border-radius:var(--rad);box-shadow:var(--sh)}
+#tabs button{background:transparent;color:#dbe6fb;border:0;text-align:left;padding:10px 12px;border-radius:10px;font-weight:600}
+#tabs button:hover{background:#ffffff1a}
+#tabs button.on{background:var(--navy2);color:#fff}
+/* toolbar + filters */
+.bar{gap:8px}
+#flt{background:#fff;border-radius:var(--rad);padding:10px 12px;box-shadow:var(--sh)}
+#flt select,#flt input:not([type=checkbox]){min-width:150px;border-radius:99px;padding:6px 14px}
+.info{font-weight:600;color:var(--navy)}
+/* KPI cards */
+.cards{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.card{border:0;border-radius:var(--rad);box-shadow:var(--sh);padding:14px 16px;border-left:4px solid var(--navy2)}
+.card:hover{box-shadow:0 6px 18px #0f2a5f24}
+.card small{font-weight:600}
+.card b{font-size:28px;font-weight:700;color:var(--navy);line-height:1.2}
+/* charts, tables, misc panels */
+.cv{border:0;border-radius:var(--rad);box-shadow:var(--sh);padding:12px}
+#view .grid{gap:14px}
+.tw{border:0;border-radius:var(--rad);box-shadow:var(--sh)}
+th{border-color:#1a3a7a;font-size:11px}
+td,th{border-color:#e6ecf4}
+.warn,details,.emptybox,fieldset{border-radius:var(--rad)}
+h3{color:var(--navy)}
+.mb{border-radius:var(--rad)}
+.chip{border-radius:99px}
+/* tablet / mobile: sidebar -> scrollable tab strip */
+@media(max-width:1024px){
+ main{display:block;padding:10px 12px}
+ main>#tabs{position:static;flex-direction:row;overflow-x:auto;white-space:nowrap;margin:10px 0;background:#fff;box-shadow:var(--sh)}
+ #tabs button{color:var(--navy);flex:0 0 auto}#tabs button:hover{background:#eef3fb}
+ #tabs button.on{background:var(--navy2);color:#fff}
+ .ttl{flex-direction:column;align-items:flex-start;gap:2px}.ttl small{border:0;padding:0;margin:0}
+}
+@media(max-width:700px){
+ .app-h{padding:10px 12px}.ttl h1{font-size:18px}.ttl small{font-size:10px}
+ .card b{font-size:22px}.cards{grid-template-columns:repeat(2,1fr)}
+ #flt select,#flt input:not([type=checkbox]){min-width:0;flex:1 1 45%}
+ .bar button,.bar .btn{flex:1 1 auto}
+}
+@media print{
+ main{display:block}
+ main>#tabs{display:none!important}
+}
+/* table alignment fix: clickable rows (tr.ck) must stay table rows; .ck flex is only for modal checkbox labels */
+tr.ck{display:table-row;padding:0;gap:0;align-items:initial}
+table{table-layout:auto;border-collapse:separate;border-spacing:0}
+th,td{border:0;border-bottom:1px solid #e6ecf4;border-right:1px solid #eef2f8;padding:9px 12px}
+th{border-right:1px solid #1f3f86;border-bottom:0;padding:11px 12px;z-index:1}
+.tw{border-radius:var(--rad);overflow-x:auto}
+td{border-radius:0;background:#fff}
+tbody tr:nth-child(even) td{background:#f6f9fd}
+tr.ck:hover td{background:#e8eef8}
+td:first-child,th:first-child{position:sticky;left:0;z-index:2}
+td:first-child{background:inherit;box-shadow:1px 0 0 #e6ecf4}
+tbody tr td:first-child{background:#fff}
+tbody tr:nth-child(even) td:first-child{background:#f6f9fd}
+tr.ck:hover td:first-child{background:#e8eef8}
+th:first-child{background:var(--hd)}
+.pg{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pg .np{display:inline-flex;align-items:center;gap:6px}
+.pg button{min-height:28px;padding:2px 10px}
+/* ===== SINGLE-SCREEN OVERVIEW LAYER (appended last; overrides earlier rules) ===== */
+:root{--deep:#0b1f46;--blue:#2563EB;--green:#16A34A;--red:#DC2626;--amber:#F59E0B;--purple:#7C3AED;--cyan:#0891B2;--teal:#0D9488;--indigo:#4F46E5;--lblue:#EAF2FF;--bg:#e9eff8;--sbw:212px}
+@media(min-width:1600px){:root{--sbw:236px}}
+body{background:var(--bg)}
+/* zoom button + modal helpers */
+.cv{position:relative}
+.zb{position:absolute;top:4px;right:5px;min-height:22px;width:22px;padding:0;font-size:12px;line-height:1;border-radius:7px;background:#fff;z-index:3;opacity:.7;display:grid;place-items:center}
+.zb:hover{opacity:1}
+.zwrap{position:relative;height:70vh;min-height:320px}
+.zt{height:auto;max-height:75vh;overflow:auto}.zt th{pointer-events:none}.zt .pg{display:none}
+/* ---- depot shell: sidebar (tabs) + content column ---- */
+main{max-width:1900px;margin:0 auto;padding:10px 12px;display:grid;grid-template-columns:var(--sbw) minmax(0,1fr);gap:0 12px;align-items:start}
+main>*{grid-column:2;min-width:0}
+main>#tabs{grid-column:1;grid-row:1;margin:0;padding:8px;gap:3px;background:linear-gradient(180deg,#0b1f46,#102A56);border-radius:14px}
+#tabs button{display:flex;align-items:center;gap:9px;padding:8px 11px;font-size:13px;border-radius:10px;transition:background .15s,transform .15s}
+#tabs button svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.92}
+#tabs button:hover{background:#ffffff1f}
+#tabs button.on{background:linear-gradient(90deg,#2563EB,#1d4ed8);box-shadow:0 2px 8px #2563eb55}
+.dcol{display:flex;flex-direction:column;gap:6px;min-width:0}
+.dbar{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;padding:3px 10px;background:#fff;border:0;border-radius:12px;box-shadow:var(--sh)}
+.dbar b{font-size:14px;white-space:nowrap;color:var(--navy)}
+.dbar .nb{min-height:28px;padding:3px 10px;font-size:12px;white-space:nowrap}
+.dbar .info{margin:0 0 0 auto;min-width:0;font-size:11px;font-weight:500;color:var(--m);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#actbar{display:flex;flex-wrap:wrap;gap:5px;margin:0}
+#actbar button,#actbar .btn{display:inline-flex;align-items:center;min-height:28px;padding:2px 9px;font-size:11.5px;border-radius:8px;white-space:nowrap}
+#warn:empty,#map:empty{display:none}
+#warn .warn{margin:0 0 4px;padding:4px 8px;font-size:11.5px}
+#map details{padding:2px 10px;border-radius:10px;font-size:11.5px}
+#map summary{cursor:pointer;line-height:1.6;color:var(--m)}
+#flt{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;margin:0;padding:6px 8px;background:#fff;border-radius:12px;box-shadow:var(--sh)}
+#flt select,#flt input:not([type=checkbox]){min-width:0;min-height:30px;padding:2px 12px;font-size:12px;border-radius:99px;flex:0 1 auto}
+#fd{width:172px}#fs{width:108px}#fc{width:142px}#fx{width:150px}
+#flt #fq{flex:1 1 180px;width:auto}
+#flt input[type=checkbox]{min-height:0;width:14px;height:14px;padding:0;margin:0;accent-color:var(--blue)}
+#flt label{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:12px;font-weight:600;color:var(--navy)}
+/* ---- overview: base (non-fit) layout ---- */
+.ovg{display:flex;flex-direction:column;gap:8px}
+.ovg .cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0}
+.ovg .card{--ac:var(--blue);--tn:#EAF2FF;--tx:var(--ac);position:relative;min-width:0;padding:6px 9px 6px 10px;border:0;border-left:3px solid var(--ac);border-radius:10px;background:linear-gradient(135deg,#fff 0%,var(--tn) 100%);box-shadow:var(--sh);transition:transform .12s,box-shadow .12s}
+.ovg .card:hover{transform:translateY(-1px);box-shadow:0 5px 14px #0f2a5f26}
+.ovg .card small{display:block;font-size:10px;font-weight:700;line-height:1.15;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ovg .card b{display:block;margin-top:1px;font-size:clamp(15px,1.25vw,21px);line-height:1.15;color:var(--tx);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ovg .card i{display:block;min-height:11px;font-style:normal;font-size:9px;line-height:1.25;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.c-blue{--ac:#2563EB;--tn:#EAF2FF}
+.card.c-cyan{--ac:#0891B2;--tn:#E0F7FB}
+.card.c-indigo{--ac:#4F46E5;--tn:#EEF0FF}
+.card.c-green{--ac:#16A34A;--tn:#DCFCE7}
+.card.c-teal{--ac:#0D9488;--tn:#D5F5F0}
+.card.c-red{--ac:#DC2626;--tn:#FEE2E2}
+.card.c-purple{--ac:#7C3AED;--tn:#F1EAFF}
+.card.c-amber{--ac:#F59E0B;--tx:#B45309;--tn:#FEF3C7}
+.ovmid{display:grid;grid-template-columns:1fr;gap:8px;align-items:stretch}
+.pn{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;padding:6px 8px;background:#fff;border-radius:12px;box-shadow:var(--sh)}
+.pn h3{display:flex;align-items:center;gap:6px;margin:0 0 4px;padding-right:26px;font-size:12px;color:var(--navy)}
+.pn h3::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--blue)}
+.ovmid .tw{border:1px solid #e6ecf4;border-radius:8px;box-shadow:none;overflow-x:auto}
+.ovmid table{width:100%;font-size:10.5px}
+.ovmid th,.ovmid td{padding:2px 8px;line-height:1.25;white-space:nowrap}
+.ovmid th{padding:4px 8px;font-size:9.5px;position:static}
+.ovmid td.n{text-align:right;font-variant-numeric:tabular-nums}
+.ovmid tbody td:nth-last-child(2):not(:first-child){background:#EAF2FF;font-weight:700;color:var(--navy)}
+.ovmid td:last-child:not(:first-child){text-align:center}
+.ovmid .pg{display:none}
+.mgs{display:flex;flex-direction:column;gap:6px;flex:1;min-height:0;overflow:auto}
+.pn .warn.plain{margin:0;padding:7px 9px;font-size:11.5px;line-height:1.5;border:1px solid #e6ecf4;border-radius:8px;background:#f8fafd}
+.pn .warn.plain b{color:var(--navy)}.pn .warn.plain b.r{color:var(--red)}.pn .warn.plain b.a{color:#B45309}
+.mpr{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px}
+.pbr{display:grid;grid-template-columns:1fr auto;gap:1px 6px;font-size:10.5px;color:#475569}
+.pbr b{color:var(--c);font-weight:800}
+.pbr u{grid-column:1/-1;position:relative;height:5px;border-radius:3px;background:#e5eaf3;text-decoration:none;overflow:hidden}
+.pbr u::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);border-radius:3px;background:var(--c)}
+#view .ovch{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ovch .cv{display:flex;flex-direction:column;height:210px;padding:5px 8px 4px;border-radius:12px;overflow:hidden}
+.ch-h{display:flex;align-items:center;gap:6px;margin-bottom:2px;padding-right:24px;font-size:11.5px;font-weight:700;line-height:1.2;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-h::before{content:"";flex:none;width:6px;height:6px;border-radius:2px;background:var(--cc,var(--blue))}
+.cw{position:relative;flex:1 1 0;min-height:0}
+.cw canvas{max-width:100%}
+/* ---- desktop width ---- */
+@media(min-width:1025px){
+ .app-h{padding:6px 18px}.logo{width:32px;height:32px;border-width:2px;font-size:12px}.ttl h1{font-size:18px}.ttl small{font-size:10.5px}
+ .app-h .nb{padding:4px 12px;font-size:12.5px;min-height:30px}
+ .ovg .cards{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .ovmid{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+ #view .ovch{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(min-width:1500px),(min-width:1180px) and (max-height:820px){.ovg .cards{grid-template-columns:repeat(11,minmax(0,1fr))}}
+/* ---- SINGLE-SCREEN FIT: whole Overview inside one viewport, no vertical scroll ---- */
+@media screen and (min-width:1025px) and (min-height:560px){
+ body.ovf{height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+ body.ovf .app-h,body.ovf #banner{flex:none}
+ body.ovf #depotView{flex:1 1 0;min-height:0}
+ body.ovf main{flex:1 1 0;min-height:0;max-width:none;margin:0;padding:6px 8px;grid-template-rows:minmax(0,1fr);align-items:stretch;overflow:hidden}
+ body.ovf main>#tabs{position:static;align-self:stretch;overflow:hidden auto}
+ body.ovf .dcol{min-height:0;overflow:hidden auto}
+ body.ovf #view{flex:1 1 0;min-height:430px;position:relative}
+ body.ovf .ovg{position:absolute;inset:0;display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:8px;min-height:0}
+ body.ovf .ovmid{min-height:0}
+ body.ovf .ovmid .tw{overflow:hidden}
+ body.ovf #view .ovch{grid-template-rows:minmax(0,.9fr) minmax(0,1.1fr);min-height:0}
+ body.ovf .ovch .cv{height:auto;min-height:0}
+}
+@media screen and (min-width:1025px) and (min-height:560px) and (max-height:820px){
+ body.ovf .app-h{padding:3px 16px}
+ body.ovf .app-h .nb{min-height:26px;padding:3px 12px}
+ body.ovf .logo{width:28px;height:28px}
+ body.ovf .ovmid th{padding:3px 7px;font-size:9px}
+ body.ovf .ovmid td{padding:1px 7px;font-size:10px}
+ body.ovf .ovg .card{padding:4px 8px 4px 9px}
+ body.ovf #tabs button{padding:6px 10px}
+ body.ovf .pn .warn.plain{font-size:11px;line-height:1.4;padding:5px 8px}
+}
+@media screen and (min-width:1025px) and (min-height:1000px){
+ body.ovf .ovmid td{padding:4px 9px;font-size:11px}
+ body.ovf .ovmid th{padding:6px 9px;font-size:10px}
+ body.ovf .ovg .card{padding:9px 11px 9px 12px}
+ body.ovf .ch-h,body.ovf .pn h3{font-size:12.5px}
+}
+/* ---- tablet / mobile ---- */
+@media(max-width:1024px){
+ main>#tabs{background:#fff;border-radius:14px}
+ #tabs button{color:var(--navy);flex:0 0 auto}
+ #tabs button:hover{background:#eef3fb}
+ #tabs button.on{background:linear-gradient(90deg,#2563EB,#1d4ed8);color:#fff}
+ .dbar,#flt{flex-wrap:wrap}.dbar .info{margin:0;white-space:normal}
+ #fq{flex:1 1 200px}
+}
+@media(max-width:700px){
+ .ovg .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #view .ovch{grid-template-columns:1fr}.ovch .cv{height:230px}
+ #fd,#fs,#fc,#fx{width:auto;flex:1 1 45%}#flt #fq{flex:1 1 100%}
+ .dbar{padding:6px 8px}
+}
+@media print{.zb{display:none}.dbar{background:none;box-shadow:none;padding:0 0 4px}.dbar .info{margin-left:8px}}
+
+/* ===== SIDEBAR BACKGROUND IMAGE (bus.png) =====
+   Put bus.png in the SAME folder as this HTML file. To use another file name or path change --sb-img.
+   --sb-top / --sb-mid / --sb-bot = dark overlay strength (lower the alpha to show more of the picture).
+   If bus.png is missing, the original blue gradient is shown automatically. */
+:root{--sb-img:url('bus.png');--sb-top:rgba(8,20,50,.72);--sb-mid:rgba(8,20,50,.38);--sb-bot:rgba(8,20,50,.78)}
+@media(min-width:1025px){
+ main>#tabs{
+  background:
+   linear-gradient(180deg,var(--sb-top) 0%,var(--sb-mid) 45%,var(--sb-bot) 100%),
+   var(--sb-img) center center/cover no-repeat,
+   linear-gradient(180deg,#0b1f46,#102A56);
+ }
+ #tabs button{text-shadow:0 1px 3px rgba(0,0,0,.65)}
+ #tabs button:hover{background:#ffffff26}
+}
+/* ===== END UI REFRESH ===== */
+
+/* ===== UPLOAD DOR + DEPOT SELECTOR (new) ===== */
+#depSel{background:#ffffff1a;color:#fff;border:1px solid #ffffff40;border-radius:12px;padding:6px 12px;font-weight:700;min-height:34px;cursor:pointer;max-width:220px}
+#depSel:hover{border-color:#fff}
+.upl{margin-left:auto;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+#actbar #bUp{background:var(--green);border-color:var(--green);color:#fff;font-weight:700;padding:2px 14px}
+#actbar #bUp:hover:not(:disabled){background:#15803d;border-color:#15803d}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head><body>
+<header class="app-h np">
+ <div class="logo">CE</div>
+ <div class="ttl"><h1>CHAKRA E-TRANS</h1><small>CENTRALIZED TRANSPORT OPERATIONS DASHBOARD</small></div>
+ <nav><button class="nb" id="consBtn">Consolidated Report</button><button class="nb" id="addBtn">+ Add Depot</button></nav>
+</header>
+<div id="banner" class="np"></div>
+
+<!-- ================= DEPOT DASHBOARD ================= -->
+<section id="depotView">
+ <main>
+  <div class="tabs np" id="tabs"></div>
+  <div class="dcol">
+   <div class="dbar"><b id="dTitle"></b><div class="info" id="info"></div></div>
+  <div class="bar np" id="actbar">
+   <input type="file" id="fleet" accept=".xlsx,.xls,.csv" hidden><label class="btn" for="fleet" title="Optional: first column = bus numbers">Fleet master (optional)</label><button id="fleetClear" style="display:none">Clear fleet master</button>
+   <button id="bXl" class="pri">Depot Excel</button><button id="bDates">Date-wise Excel</button><button id="bDest">Destination report</button><button id="bBus">Bus report</button><button id="bDrv">Driver report</button><button id="bDq">Data quality report</button>
+   <button id="bPdf">PDF – full A4</button><button id="bPdfTab">PDF – this tab</button><button id="bSet" title="Depot settings">⚙ Settings</button>
+   <span class="upl np"><input type="file" id="dorFile" accept=".xlsx,.xls" hidden><button id="bUp" title="Upload the DOR Excel for this depot">⬆ Upload DOR Excel</button><button id="bHist" title="All uploaded reports of this depot">History</button><button id="bRem" class="danger" title="Delete the report of the selected date">Remove</button></span>
+   <span class="esr np"><input id="eq" list="eql" placeholder="🔍 Bus no. / Service no. / Driver ID" autocomplete="off" aria-label="Search bus, service or driver"><datalist id="eql"></datalist><button id="eGo" class="pri">Full report</button></span>
+  </div>
+  <div id="warn"></div><div id="map" class="np"></div>
+  <div class="bar np" id="flt">
+   <select id="fd" onchange="sf('date',this.value)" aria-label="Reporting date"></select>
+   <select id="fs" onchange="sf('shift',this.value)"><option value="">All shifts</option><option>First</option><option>Second</option><option>Unknown</option></select>
+   <select id="fc" onchange="sf('cat',this.value)"></select><select id="fx" onchange="sf('dest',this.value)"></select>
+   <input id="fq" placeholder="Search service / bus / driver / route" oninput="sf('q',this.value.toLowerCase())" size="28">
+   <label><input type="checkbox" id="nodup" onchange="CFG.nodup=this.checked;render()"> Exclude exact duplicates</label>
+  </div>
+  <div id="view"></div>
+  </div>
+ </main>
+</section>
+
+<div id="md" class="modal" onclick="if(event.target===this)this.style.display='none'"><div class="mb" id="mb"></div></div>
+<div id="am" class="modal"><div class="mb" id="ab"></div></div>
+<div id="busy"><div class="spin"></div><span id="busyMsg">Processing…</span></div>
+<div id="toasts" class="np"></div>
+<div id="printArea"></div>
+
+<script>
+/* storage.js — persistent browser-side storage (IndexedDB) for CHAKRA E-TRANS.
+   Stores:  depots  (DEPOT_REGISTRY)   keyPath id
+            reports (DOR_REPORTS)      keyPath key = depotId + '|' + reportingDate  (unique per depot + date)
+            meta    (fleet masters etc) keyPath k
+   If IndexedDB is unavailable (some private modes) an in-memory fallback is used and Store.persistent is false. */
+'use strict';
+const Store=(()=>{
+ const DB_NAME='chakra_etrans_dor',VER=1,KEY={depots:'id',reports:'key',meta:'k'};
+ let db=null,useMem=false;
+ const mem={depots:new Map(),reports:new Map(),meta:new Map()};
+ const api={persistent:true};
+ function init(){
+  return new Promise(res=>{
+   if(typeof indexedDB==='undefined'||!indexedDB){useMem=true;api.persistent=false;return res(api)}
+   let q;try{q=indexedDB.open(DB_NAME,VER)}catch(e){useMem=true;api.persistent=false;return res(api)}
+   q.onupgradeneeded=()=>{const d=q.result;
+    if(!d.objectStoreNames.contains('depots'))d.createObjectStore('depots',{keyPath:'id'});
+    if(!d.objectStoreNames.contains('reports')){const s=d.createObjectStore('reports',{keyPath:'key'});s.createIndex('depotId','depotId',{unique:false})}
+    if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta',{keyPath:'k'})};
+   q.onsuccess=()=>{db=q.result;db.onversionchange=()=>{db.close()};
+    try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+    res(api)};
+   q.onerror=q.onblocked=()=>{useMem=true;api.persistent=false;res(api)};
+  });
+ }
+ const wrap=r=>new Promise((ok,no)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+ const done=t=>new Promise((ok,no)=>{t.oncomplete=()=>ok();t.onerror=()=>no(t.error);t.onabort=()=>no(t.error||new Error('Store transaction aborted'))});
+ async function all(n){if(useMem)return[...mem[n].values()];return wrap(db.transaction(n).objectStore(n).getAll())}
+ async function get(n,k){if(useMem)return mem[n].get(k);return wrap(db.transaction(n).objectStore(n).get(k))}
+ async function put(n,v){if(useMem){mem[n].set(v[KEY[n]],v);return}const t=db.transaction(n,'readwrite');t.objectStore(n).put(v);return done(t)}
+ async function del(n,k){if(useMem){mem[n].delete(k);return}const t=db.transaction(n,'readwrite');t.objectStore(n).delete(k);return done(t)}
+ Object.assign(api,{
+  init,
+  depots:()=>all('depots'),
+  saveDepot:d=>put('depots',d),
+  reports:async id=>(await all('reports')).filter(r=>r.depotId===id),
+  allReports:()=>all('reports'),
+  report:k=>get('reports',k),
+  saveReport:r=>put('reports',r),
+  removeReport:k=>del('reports',k),
+  getMeta:async k=>{const m=await get('meta',k);return m?m.v:undefined},
+  setMeta:(k,v)=>put('meta',{k,v}),
+  delMeta:k=>del('meta',k),
+  reportKey:(depotId,date)=>depotId+'|'+date
+ });
+ return api;
+})();
+
+</script>
+<script>
+/* dor-parser.js — Excel (SheetJS) parsing, column mapping, validation, row model and the central DOR calculation engine.
+   The business logic (shift rules, trip pairing, loss, odometer, status) is the original DOR engine, parameterised per depot
+   (home stop code / aliases) instead of being hard-wired. */
+'use strict';
+/* ============ SHARED HELPERS ============ */
+const $=s=>document.querySelector(s),
+ esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),
+ n0=v=>(+v||0).toLocaleString('en-IN',{maximumFractionDigits:1});
+const pad=n=>String(n).padStart(2,'0');
+const norm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
+const num=v=>{if(v===''||v==null)return null;const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?null:n};
+const tm=v=>{if(v===''||v==null)return null;if(typeof v==='number')return Math.round((v%1)*1440)%1440;const m=String(v).match(/(\d{1,2}):(\d{2})/);return m?(+m[1]*60+ +m[2])%1440:null};
+const hm=t=>t==null?'':String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+const sum=(a,f)=>a.reduce((s,x)=>s+(f(x)||0),0),uniq=(l,f)=>[...new Set(l.map(f).filter(Boolean))].join(', '),by=(rs,f)=>{const o={};rs.forEach(r=>(o[f(r)]??=[]).push(r));return o};
+const lk=r=>r.loss!=null?r.loss:Math.max(0,(r.sKm||0)-(r.aKm||0));
+const ISO=/^\d{4}-\d{2}-\d{2}$/;
+const dmy=iso=>ISO.test(iso||'')?iso.slice(8)+'-'+iso.slice(5,7)+'-'+iso.slice(0,4):(iso||'');
+const slug=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'depot';
+/* strict date -> 'YYYY-MM-DD', or '' when blank / not a real calendar date */
+function normDate(v){
+ if(v===''||v==null)return'';
+ if(typeof v==='number'){if(v<20000||v>80000)return'';return new Date(Math.floor(v-25569)*864e5).toISOString().slice(0,10)}
+ const s=String(v).trim();let y,m,d,x;
+ if(x=s.match(/^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})/)){y=+x[1];m=+x[2];d=+x[3]}
+ else if(x=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/)){d=+x[1];m=+x[2];y=+x[3]}
+ else return'';
+ const t=new Date(Date.UTC(y,m-1,d));
+ if(t.getUTCFullYear()!==y||t.getUTCMonth()!==m-1||t.getUTCDate()!==d)return'';
+ return `${y}-${pad(m)}-${pad(d)}`;
+}
+function readFile(f){return new Promise((ok,no)=>{const rd=new FileReader();rd.onload=()=>ok(rd.result);rd.onerror=()=>no(rd.error||new Error('Could not read the file'));rd.readAsArrayBuffer(f)})}
+
+/* ============ CONFIG ============ */
+const JBS=/\bJBS\b|JUBILEE/i;
+const DEST_BASE={jbs:'JBS',gdk:'GDK',mncl:'MNCL',mnty:'MNTY',kmr:'KMR',jgtl:'JGTL',metpelly:'Metpelly',hnk:'HNK',nizamabad:'NZB',nzb:'NZB',warangal:'WGL',wgl:'WGL',luxettipet:'Luxettipet'};
+const F={date:/^(date|reportdate|dutydate|dordate)$/,depot:/^depot(name)?$/,svc:/^(routeno|serviceno|service|routenumber)$/,routes:/^(routes?|routename|routedescription)$/,bus:/^(busno|busnumber|vehicleno)$/,trip:/^(trip|tripno)$/,sT:/^schedulestart/,aT:/^actualstart/,sKm:/^(schedulekms?|schkm)$/,aKm:/^(actroutekms?|actualroutekms?)$/,loss:/^routekmloss$/,odo:/^odometerdiff/,miss:/^misstrip/,reason:/^reasonforkilometerloss/,bin:/^bining/,log:/^logsheetremarks/,rem:/^remarks?$/,drv:/^(driverid|driverno|driver)$/,cat:/^(buscategory|category|servicetype|servicecategory)$/,model:/^(busmodel|model|bustype)$/,soc:/^soc/};
+const LBL={date:'Date',depot:'Depot Name',svc:'Route No. (service)*',routes:'Routes',bus:'Bus No.*',trip:'Trip',sT:'Schedule Start Time',aT:'Actual Start Time',sKm:'Schedule Km*',aKm:'Act. Route Km*',loss:'Route Km Loss',odo:'Odometer Diff. Km (B-A)',miss:'Miss Trip',reason:'Reason For Km Loss',bin:'Bining For Reson KM Loss',log:'Logsheet Remarks',rem:'Remarks',drv:'Driver ID',cat:'Bus Category',model:'Bus Model',soc:'SOC consumption'};
+const REQ=['svc','bus','sKm','aKm'],OPT_WARN=['depot','sT','drv','odo','date'];
+
+const Engine=(()=>{
+ const defaultConfig=()=>({tol:5,abn:50,home:'KNR',homeAliases:'karimnagar,knr,krmr',destAliases:''});
+ /* ctx = per-depot interpretation of the "Depot Name" column (where each leg starts) */
+ function makeCtx(cfg){
+  cfg=Object.assign(defaultConfig(),cfg||{});
+  const home=String(cfg.home||'KNR').trim().toUpperCase()||'KNR';
+  const clean=s=>String(s).toLowerCase().replace(/[^a-z]/g,'');
+  const al=new Set(String(cfg.homeAliases||'').split(',').map(clean).filter(Boolean));al.add(clean(home));
+  const extra={};String(cfg.destAliases||'').split(',').forEach(p=>{const [a,b]=p.split('=');if(a&&b&&clean(a))extra[clean(a)]=b.trim().toUpperCase()});
+  return{home,org:d=>{const k=clean(d);return al.has(k)?home:(extra[k]||DEST_BASE[k]||String(d).trim().toUpperCase())}};
+ }
+ /* ---- Excel workbook -> header / column map / data rows (every non-empty row kept with its true Excel row number) ---- */
+ function detectMap(hdr){const m={};for(const k in F)m[k]=hdr.findIndex(x=>F[k].test(norm(x)));return m}
+ function parseWorkbook(buf,name){
+  let wb;
+  try{wb=XLSX.read(buf,{type:'array'})}catch(e){throw new Error('This file is not a readable Excel workbook ('+e.message+')')}
+  if(!wb.SheetNames.length)throw new Error('The workbook contains no worksheets.');
+  const sn=wb.SheetNames.find(n=>/^dor$/i.test(n.trim()))||wb.SheetNames.find(n=>/dor/i.test(n)),sheet=sn||wb.SheetNames[0],ws=wb.Sheets[sheet];
+  if(!ws||!ws['!ref'])throw new Error(`Worksheet "${sheet}" is empty.`);
+  const rg=XLSX.utils.decode_range(ws['!ref']),a=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+  for(const addr in ws){if(addr[0]==='!')continue;const c=ws[addr];if(c&&c.t==='e'){const p=XLSX.utils.decode_cell(addr),row=a[p.r-rg.s.r];if(row)row[p.c-rg.s.c]=c.w||'#ERROR!'}}   // formula errors stay visible as text
+  if(!a.length)throw new Error(`Worksheet "${sheet}" has no data.`);
+  let best=-1,h=0;for(let i=0;i<Math.min(25,a.length);i++){const c=a[i].filter(x=>x!==''&&Object.values(F).some(re=>re.test(norm(x)))).length;if(c>best){best=c;h=i}}
+  const hdr=(a[h]||[]).map(x=>String(x).trim()),map=detectMap(hdr),items=[];let emptyRows=0;
+  for(let i=h+1;i<a.length;i++){const row=a[i];if(row.every(c=>c===''))emptyRows++;else items.push({row,rn:rg.s.r+1+i})}
+  return{file:name,sheet,noSheet:!sn,h,hdr,map,items,emptyRows,headerHits:best};
+ }
+ /* One workbook may hold several days: split into one group per reporting date. Rows with a blank/invalid date follow the main date. */
+ function splitByDate(p,sel){
+  const m=p.map,g={},und=[];
+  p.items.forEach(it=>{const d=m.date>=0?normDate(it.row[m.date]):'';if(d)(g[d]??=[]).push(it);else und.push(it)});
+  const ds=Object.keys(g).sort();
+  if(!ds.length){
+   if(!ISO.test(sel||''))throw new Error('This workbook has no usable Date column, so the reporting date must be entered.');
+   return[{date:sel,items:p.items}];
+  }
+  const main=(sel&&g[sel])?sel:ds.reduce((x,y)=>g[y].length>g[x].length?y:x);
+  und.forEach(it=>g[main].push(it));g[main].sort((x,y)=>x.rn-y.rn);
+  return ds.map(d=>({date:d,items:g[d]}));
+ }
+ /* ---- ROW MODEL: classification, shift, direction, destination, validation flags ---- */
+ function buildRows(rep,ctx){
+  const m=rep.map,seen=new Set(),s=x=>String(x??'').trim(),rows=[],skipped=[],H=ctx.home;
+  rep.data.forEach((a,i)=>{
+   const g=k=>m[k]>=0?a[m[k]]:'',rawDate=g('date'),nd=normDate(rawDate);
+   const r={i:rep.rn?rep.rn[i]:rep.h+i+2,date:nd||rep.date,depot:s(g('depot')),svc:s(g('svc')).toUpperCase(),routes:s(g('routes')),bus:s(g('bus')).toUpperCase(),sT:tm(g('sT')),aT:tm(g('aT')),sKm:num(g('sKm')),aKm:num(g('aKm')),loss:num(g('loss')),odo:num(g('odo')),miss:num(g('miss')),drv:s(g('drv')),model:s(g('model')),soc:num(g('soc')),reason:['reason','bin','log','rem'].map(k=>s(g(k))).find(x=>x)||'',is:[]};
+   if(!r.svc&&!r.bus){skipped.push(r.i);return}               // blank / total rows: excluded but listed in Data Quality
+   if(rawDate!==''&&rawDate!=null&&!nd)r.is.push('Invalid date ('+s(rawDate)+')');
+   r.org=ctx.org(r.depot);const jb=JBS.test(r.routes+' '+r.depot),cr=s(g('cat'))+' '+r.model;
+   let b=/super\s*lux|slx|\bsl\b/i.test(cr)?'Super Luxury':/express|\bexp\b/i.test(cr)?'Express':/deluxe|dlx/i.test(cr)?'Deluxe':'';
+   if(!b&&jb){b=/^(SL|SJ)/.test(r.svc)?'Super Luxury':'Express';r.is.push('Category inferred from service no.')}
+   r.cat=jb&&(b==='Express'||b==='Super Luxury')?'JBS '+b:(b||'Other');r.jb=r.cat.startsWith('JBS');
+   if(r.jb){const n=(r.svc.match(/(\d+)$/)||[])[1];r.shift=n==null?'Unknown':n%2?'First':'Second';if(n==null)r.is.push('JBS service no. has no number')}   // special rule: odd=First, even=Second
+   r.op=(r.aKm||0)>0;
+   if(!r.bus)r.is.push('Missing bus no.');if(!r.svc)r.is.push('Missing route/service no.');if(!r.depot)r.is.push('Missing depot name');
+   if(r.op&&!r.drv)r.is.push('Missing driver ID');if(r.sT==null)r.is.push('Missing scheduled time');if(r.op&&r.aT==null)r.is.push('Missing actual time');
+   if(r.op&&r.odo==null)r.is.push('Missing odometer');if(r.op&&r.odo===0)r.is.push('Zero odometer on operated leg');if(r.aKm<0||r.odo<0)r.is.push('Negative km');if(r.sKm==null)r.is.push('Missing schedule km');
+   if(g('aKm')!==''&&r.aKm==null)r.is.push('Non-numeric actual km');
+   if(g('sKm')!==''&&r.sKm==null)r.is.push('Non-numeric schedule km');
+   if(g('odo')!==''&&r.odo==null)r.is.push('Non-numeric odometer');
+   if(a.some(c=>/^#(REF|N\/A|VALUE|DIV|NAME|NUM|NULL)/.test(String(c))))r.is.push('Formula error in row');
+   const cl=Math.max(0,(r.sKm||0)-(r.aKm||0));if(r.loss!=null&&Math.abs(r.loss-cl)>0.5)r.is.push(`Loss km mismatch (reported ${r.loss}, calc ${cl.toFixed(1)})`);
+   const dk=JSON.stringify([r.date,r.svc,r.bus,g('trip'),r.sT,r.aT,r.sKm,r.aKm,r.depot]);if(seen.has(dk)){r.dup=true;r.is.push('Duplicate record')}seen.add(dk);
+   rows.push(r)});
+  /* TRIP PAIRING: legs of one date+service+bus, in DOR order. Two consecutive legs starting at DIFFERENT stops = one round trip
+     (e.g. home→GDK + GDK→home, or NZB→WGL + WGL→NZB). A leg with no partner is flagged, never counted as a trip. */
+  Object.values(by(rows,r=>[r.date,r.svc,r.bus].join('|'))).forEach(L=>{
+   for(let i=0;i<L.length;){const a=L[i],b=L[i+1],pr=!!b&&b.org!==a.org,rr=pr?[a,b]:[a];i+=rr.length;
+    const ok=pr&&rr.every(r=>r.op),U={rows:rr,main:a,done:ok,part:ok&&rr.some(r=>r.aKm<r.sKm-1)},kn=rr.find(r=>r.org===H),ot=rr.find(r=>r.org!==H);
+    const dest=pr?(kn?ot.org:[a.org,b.org].sort().join('–')):(a.org===H?'Unknown':a.org);
+    if(pr){a.dir=a.org===H||!kn?'OUT':'RET';b.dir=a.dir==='OUT'?'RET':'OUT'}else{a.dir=a.org===H?'OUT':'RET';a.is.push(a.dir==='OUT'?'Unmatched outward leg (no return leg)':'Unmatched return leg (no outward leg)')}
+    const sh=a.sT==null?'Unknown':(a.sT>=1430||a.sT<710)?'First':'Second';       // ordinary services: by scheduled departure of the round trip's first leg
+    rr.forEach(r=>{r.pu=U;r.dest=dest;if(!r.jb)r.shift=sh})}});
+  return{rows,skipped};
+ }
+ /* ---- Report-level helpers ---- */
+ function summaryOf(rs,fleetSize){
+  const k=K(rs);
+  return{fleet:fleetSize||k.allBuses,fleetFromMaster:!!fleetSize,onRoad:k.buses,schServices:k.svcS,opServices:k.svcO,schTrips:k.schT,opTrips:k.opT,lossTrips:k.lossT,schKm:k.sKm,opKm:k.oKm,lossKm:k.lossKm,odoKm:k.odo,diff:k.diff,records:rs.length,flagged:rs.filter(r=>r.is.length).length};
+ }
+ function validationOf(b,rep){
+  const c=re=>b.rows.filter(r=>r.is.some(x=>re.test(x))).length;
+  return{records:b.rows.length,excluded:b.skipped.length,emptyRows:rep.emptyRows||0,
+   missingBus:c(/^Missing bus/),missingSvc:c(/^Missing route/),missingDepot:c(/^Missing depot/),missingDriver:c(/^Missing driver/),
+   invalidDate:c(/^Invalid date/),formulaErr:c(/^Formula error/),
+   kmIssues:c(/^(Negative km|Non-numeric|Missing schedule km|Missing odometer|Zero odometer|Loss km mismatch)/),
+   duplicates:b.rows.filter(r=>r.dup).length,flagged:b.rows.filter(r=>r.is.length).length};
+ }
+ const missingRequired=map=>REQ.filter(k=>!(map[k]>=0));
+ function evaluate(rep,ctx,fleetSize){
+  const miss=missingRequired(rep.map);
+  if(miss.length){rep.status='Needs Mapping';rep.summary=null;rep.validation=null;rep.missing=miss;return rep}
+  const b=buildRows(rep,ctx);rep.status='Processed';rep.missing=[];rep.summary=summaryOf(b.rows,fleetSize);rep.validation=validationOf(b,rep);return rep;
+ }
+ function makeReport(depot,date,p,items,fileName,fleetSize,emptyRows){
+  const rep={key:depot.id+'|'+date,reportId:'R'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),depotId:depot.id,depotName:depot.name,date,fileName,sheet:p.sheet,noSheet:p.noSheet,
+   uploadTimestamp:Date.now(),h:p.h,hdr:p.hdr.slice(),map:Object.assign({},p.map),data:items.map(i=>i.row),rn:items.map(i=>i.rn),emptyRows:emptyRows||0,status:'Processed',summary:null,validation:null};
+  return evaluate(rep,makeCtx(depot.config),fleetSize);
+ }
+ return{defaultConfig,makeCtx,parseWorkbook,splitByDate,buildRows,summaryOf,validationOf,evaluate,makeReport,missingRequired};
+})();
+
+/* ============ CENTRAL CALCULATION ENGINE (unchanged business logic) ============ */
+function K(rs){
+ const st=new Set(rs),U=[...new Set(rs.map(r=>r.pu))].filter(u=>u&&!u.unk&&st.has(u.main)),o=rs.filter(r=>r.op),od=rs.filter(r=>r.odo!=null),c=d=>rs.filter(r=>r.dir===d);
+ const k={n:rs.length,svcS:new Set(rs.map(r=>r.svc)).size,svcO:new Set(o.map(r=>r.svc)).size,buses:new Set(o.map(r=>r.bus)).size,allBuses:new Set(rs.map(r=>r.bus)).size,
+  schT:U.length,opT:U.filter(u=>u.done).length,inc:U.filter(u=>u.rows.filter(r=>r.op).length===1).length,
+  sKm:sum(rs,r=>r.sKm),oKm:sum(rs,r=>r.aKm),odo:sum(od,r=>r.odo),soc:sum(rs,r=>r.soc),lossKm:sum(rs,lk),calcLoss:sum(rs,r=>Math.max(0,(r.sKm||0)-(r.aKm||0))),
+  so:c('OUT').length,sr:c('RET').length,oo:c('OUT').filter(r=>r.op).length,or:c('RET').filter(r=>r.op).length,opLegs:o.length,noOdo:o.filter(r=>r.odo==null).length,bad:rs.some(r=>r.dest==='Unknown'),part:U.filter(u=>u.part).length};
+ k.lossT=Math.max(0,k.schT-k.opT);k.diff=sum(od,r=>r.aKm)-k.odo;
+ k.st=k.bad?'Data Verification Required':!k.opLegs?'Not Operated':(k.oo>k.or&&!k.opT)?'Missing Return Leg':(k.or>k.oo&&!k.opT)?'Missing Outward Leg':k.inc?'Partially Completed Round Trip':(k.part||k.opT<k.schT)?'Partially Operated':k.opT>=k.schT?'Fully Operated':'Partially Operated';
+ return k}
+const KC=[['Sched Trips',k=>k.schT],['Op Trips',k=>k.opT],['Loss Trips',k=>k.lossT],['Sched KMs',k=>k.sKm],['Op KMs',k=>k.oKm],['Loss KMs',k=>k.lossKm],['Odo KMs',k=>k.odo],['Act−Odo',k=>k.diff],['SOC',k=>k.soc]],ST=['Status',k=>k.st];
+function gd(rs,kf,cols){const data=Object.values(by(rs,kf)).map(l=>{const k=K(l);k.l=l;return k});return{cols,data}}
+const DS={
+ dest:rs=>gd(rs,r=>r.dest,[['Destination',k=>k.l[0].dest],...KC.slice(0,6),KC[6],KC[8]]),
+ svc:rs=>gd(rs,r=>[r.svc,r.bus,r.dest].join('|'),[['Service',k=>k.l[0].svc],['Bus',k=>k.l[0].bus],['Category',k=>k.l[0].cat],['Destination',k=>k.l[0].dest],['Shift',k=>uniq(k.l,r=>r.shift)],['Driver',k=>uniq(k.l,r=>r.drv)||'(missing)'],...KC,ST]),
+ bus:rs=>gd(rs,r=>r.bus||'(missing)',[['Bus',k=>k.l[0].bus||'(missing)'],['Model',k=>uniq(k.l,r=>r.model)],['Services',k=>uniq(k.l,r=>r.svc)],['Shift',k=>uniq(k.l,r=>r.shift)],['Routes',k=>new Set(k.l.map(r=>r.routes)).size],...KC,['Incomplete',k=>k.inc],['Flag',k=>k.opLegs?'':'Zero operation']]),
+ drv:rs=>gd(rs,r=>r.drv||'(missing)',[['Driver ID',k=>k.l[0].drv||'(missing)'],['Buses',k=>uniq(k.l,r=>r.bus)],['Services',k=>uniq(k.l,r=>r.svc)],['Shift',k=>uniq(k.l,r=>r.shift)],KC[0],KC[1],KC[2],KC[4],['Missed KMs',k=>k.lossKm],['Routes',k=>uniq(k.l,r=>r.routes)]])};
+const RC=[['Row',r=>String(r.i)],['Service',r=>r.svc],['Bus',r=>r.bus],['Routes',r=>r.routes],['Dest',r=>r.dest],['Dir',r=>r.dir],['Shift',r=>r.shift],['Sch',r=>hm(r.sT)],['Act',r=>hm(r.aT)],['Sch Km',r=>r.sKm??0],['Act Km',r=>r.aKm??0],['Loss Km',r=>lk(r)],['Odo',r=>r.odo==null?'—':r.odo],['Driver',r=>r.drv||'—'],['Issues',r=>r.is.join('; ')]];
+const aoa=(c,d)=>[c.map(x=>x[0]),...d.map(r=>c.map(x=>x[1](r)))];
+
+</script>
+<script>
+/* dashboard.js — depot DOR dashboard (Overview, Day-wise, JBS, Destinations, Services, Buses, Drivers, Loss, Odometer, Data Quality).
+   Views, drill-downs, tables and Chart.js charts are the original dashboard; data comes from the reports stored for the
+   selected depot (uploaded with the "Upload DOR Excel" button in the action bar). */
+'use strict';
+const CFG={tol:5,abn:50,nodup:false};                      // odometer tolerance / abnormal threshold (km) — per-depot values loaded on open
+const Hooks={};                                             // app.js plugs in: onDate, onMap, onFleet
+let S={f:{},tab:'ov',reports:[],rows:[],skipped:[],map:{},hdr:[],depot:null,fleet:null,ctx:null,badReports:[]};
+let T={};
+const CH={},PAL=['#2563EB','#16A34A','#DC2626','#F59E0B','#7C3AED','#0891B2','#94A3B8'];
+
+/* ============ LOAD / REBUILD ============ */
+function loadDepot(o){
+ Object.keys(CH).forEach(k=>{try{CH[k]&&CH[k].destroy()}catch(e){}delete CH[k]});T={};
+ S={f:{date:o.date||''},tab:S.tab==='all'?'ov':(S.tab||'ov'),depot:o.depot,reports:o.reports.slice(),ctx:o.ctx,fleet:o.fleet&&o.fleet.length?new Set(o.fleet):null,mapRep:null,map:{},hdr:[],rows:[],skipped:[],badReports:[]};
+ CFG.tol=o.depot.config.tol??5;CFG.abn=o.depot.config.abn??50;CFG.nodup=false;
+ const nd=document.querySelector('#nodup');if(nd)nd.checked=false;
+ rebuild();filters();render();
+}
+function rebuild(){
+ S.rows=[];S.skipped=[];S.badReports=[];
+ S.reports.slice().sort((a,b)=>a.date<b.date?-1:1).forEach(rep=>{
+  if(REQ.some(k=>!(rep.map[k]>=0))){S.badReports.push(rep);return}
+  const b=Engine.buildRows(rep,S.ctx);
+  for(const r of b.rows)S.rows.push(r);
+  b.skipped.forEach(n=>S.skipped.push(S.reports.length>1?dmy(rep.date)+' #'+n:n));
+ });
+}
+/* ============ ROW FILTER ============ */
+const rows=(ns,nd)=>S.rows.filter(r=>(nd||!S.f.date||r.date===S.f.date)&&(ns||!S.f.shift||r.shift===S.f.shift)&&(!S.f.cat||r.cat===S.f.cat)&&(!S.f.dest||r.dest===S.f.dest)&&(!S.f.q||(r.svc+' '+r.bus+' '+r.drv+' '+r.routes).toLowerCase().includes(S.f.q))&&!(CFG.nodup&&r.dup));
+/* ============ GENERIC TABLE (sort / page / click / export) ============ */
+function tbl(id,cols,data,click){T[id]=Object.assign(T[id]||{s:-1,d:1,p:0},{cols,data,click});return `<div id="w_${id}">${tb(id)}</div>`}
+function tb(id){const t=T[id],per=S.tab==='all'?1e9:50;let d=t.data.map((r,i)=>[r,i]);
+ if(t.s>=0)d.sort((a,b)=>{const x=t.cols[t.s][1](a[0]),y=t.cols[t.s][1](b[0]);return(typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y)))*t.d});
+ const cls=(l,v)=>l==='Reconciles'?(v==='✓'?'s-ok':/✗/.test(v)?'s-bad':''):l==='Status'||l==='Flag'?(/Fully|Within/.test(v)?'s-ok':/Not|Missing|Verif|Zero|Abnormal/.test(v)?'s-bad':v?'s-w':''):'';
+ return `<div class=tw><table><thead><tr>${t.cols.map((c,i)=>`<th onclick="srt('${id}',${i})">${esc(c[0])}${t.s===i?(t.d>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>${d.slice(t.p*per,t.p*per+per).map(([r,i])=>`<tr ${t.click?`class=ck onclick="rc('${id}',${i})"`:''}>${t.cols.map(c=>{const v=c[1](r);return typeof v==='number'?`<td class=n>${n0(v)}</td>`:`<td class="${cls(c[0],v)}">${v===''||v==null?'-':esc(v)}</td>`}).join('')}</tr>`).join('')}</tbody></table></div><div class="pg">${t.data.length} rows <span class=np><button onclick="pgn('${id}',-1)">‹</button> ${t.p+1}/${Math.max(1,Math.ceil(t.data.length/per))} <button onclick="pgn('${id}',1)">›</button> <button onclick="exp('${id}')">Export</button></span></div>`}
+const rd=id=>$('#w_'+id).innerHTML=tb(id);
+function srt(id,i){const t=T[id];t.d=t.s===i?-t.d:1;t.s=i;t.p=0;rd(id)}
+function pgn(id,d){const t=T[id];t.p=Math.max(0,Math.min(Math.ceil(t.data.length/50)-1,t.p+d));rd(id)}
+function rc(id,i){T[id].click(T[id].data[i])}
+function dl(a,name){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),'Data');XLSX.writeFile(wb,name+'.xlsx')}
+function exp(id){const t=T[id];dl(aoa(t.cols,t.data),`${slug(S.depot.name)}_${id}_${S.f.date||'All-Dates'}`)}
+function show(h){$('#mb').innerHTML=h+'<p><button onclick="$(\'#md\').style.display=\'none\'">Close</button></p>';$('#md').style.display='flex'}
+/* ============ DRILL-DOWN ============ */
+const DR={fleet:['Total Fleet – all records',r=>1],buses:['Buses on Road – operated records',r=>r.op],svcS:['Scheduled Services – all records',r=>1],svcO:['Operated Services – operated records',r=>r.op],schT:['Scheduled legs',r=>1],opT:['Operated legs',r=>r.op],lossT:['Non-operated legs',r=>!r.op],sKm:['Scheduled KMs',r=>1],oKm:['Operated KMs',r=>r.op],lossKm:['Records with km loss',r=>lk(r)>0],odo:['Records with odometer',r=>r.odo!=null],diff:['Records with odometer',r=>r.odo!=null]};
+function dr(k){show(`<h3>${DR[k][0]}</h3>`+tbl('dr',RC,rows().filter(DR[k][1])))}
+/* ============ VIEWS ============ */
+const aft=f=>{const o=S.after;S.after=()=>{o&&o();f()}};
+const card=(l,v,k,sub='',c='')=>`<div class="card ${c}" title="${esc(l+(sub?' – '+sub:''))}" onclick="dr('${k}')"><small>${l}</small><b>${v}</b><i>${sub}</i></div>`;
+function fleetSize(){const dr0=S.rows.filter(r=>!S.f.date||r.date===S.f.date);return S.fleet?S.fleet.size:K(dr0).allBuses}
+function vOv(){
+ const rs=rows(),k=K(rs),ns=rows(1),A=K(ns),sh=s=>K(ns.filter(r=>r.shift===s)),F1=sh('First'),F2=sh('Second'),FU=sh('Unknown');
+ const fl=fleetSize();
+ const ms=[['Scheduled services','svcS'],['Operated services','svcO'],['Scheduled trips','schT'],['Operated trips','opT'],['Loss trips','lossT'],['Scheduled KMs','sKm'],['Operated KMs','oKm'],['Loss KMs','lossKm'],['Odo KMs','odo'],['Actual − Odo','diff'],['Unique buses operated','buses']],add=['schT','opT','lossT','sKm','oKm','lossKm','odo','diff'];
+ const shRows=ms.map(([l,f])=>({l,f,a:F1[f],b:F2[f],u:FU[f],t:A[f]}));
+ const shT=tbl('sh',[['Metric',r=>r.l],['First (23:50–11:50)',r=>r.a],['Second (11:50–23:50)',r=>r.b],...(FU.n?[['Unknown shift',r=>r.u]]:[]),['for the day',r=>r.t],['Reconciles',r=>add.includes(r.f)?(Math.abs(r.a+r.b+r.u-r.t)<.01?'✓':'✗ Mismatch'):'-']],shRows);
+ const dd=DS.dest(rs).data.sort((a,b)=>b.lossKm-a.lossKm),top=dd[0];
+ aft(()=>charts(rs,k,F1,F2,fl));
+ const pc=(a,b)=>b>0?Math.max(0,Math.min(100,Math.round(a/b*100))):0,pb=(l,a,b,c)=>`<div class=pbr style="--c:${c}"><span>${l}</span><b>${b>0?pc(a,b)+'%':'–'}</b><u style="--w:${pc(a,b)}%"></u></div>`,nv=rs.filter(r=>r.is.length).length;
+ const CT=[['Scheduled / Operated / Loss KM','#2563EB',''],['Out Time – departures from depot (by hour)','#16A34A','Outward legs: scheduled vs actual start time, counted per hour of the day'],['In Time – returns to depot (by hour)','#0891B2','Return legs: scheduled vs actual start time of the return leg, counted per hour of the day'],['Service Status','#F59E0B',''],['Actual vs Odometer','#7C3AED','Actual KMs are counted only on rows that have an odometer reading'],['Top Buses by Operated KM','#2563EB',''],['Top Services by Loss KM','#DC2626',''],['Fleet Utilisation','#16A34A','']];
+ return `<div class=ovg><div class=cards>${card('Total Fleet',fl,'fleet',S.fleet?'from fleet master':'unique buses in DOR (no fleet master)','c-blue')}${card('Buses on Road',k.buses,'buses',fl?Math.round(k.buses/fl*100)+'% of fleet':'','c-cyan')}${card('Scheduled Services',k.svcS,'svcS','','c-indigo')}${card('Operated Services',k.svcO,'svcO','','c-green')}${card('Operated Trips',k.opT,'opT','round trips','c-teal')}${card('Loss Trips',k.lossT,'lossT','','c-red')}${card('Scheduled KMs',n0(k.sKm),'sKm','','c-blue')}${card('Operated KMs',n0(k.oKm),'oKm','','c-green')}${card('Loss KMs',n0(k.lossKm),'lossKm',Math.abs(k.lossKm-k.calcLoss)>1?'⚠ reported vs calc '+n0(k.calcLoss):'reconciled with calc','c-red')}${card('Odo KMs',n0(k.odo),'odo',k.noOdo?k.noOdo+' operated rows lack odo':'','c-purple')}${card('Actual vs Odo Diff',(k.diff>0?'+':'')+n0(k.diff),'diff','Act − Odo (rows with odo)','c-amber')}</div>
+ <div class=ovmid><div class=pn><h3>Shift summary</h3>${shT}</div><div class=pn><h3>Management summary</h3><div class=mgs><div class="warn plain"><b>${k.svcO}</b> of <b>${k.svcS}</b> services operated; <b>${k.opT}</b> of <b>${k.schT}</b> round trips completed (<b class=r>${k.lossT}</b> lost). Operated <b>${n0(k.oKm)}</b> of <b>${n0(k.sKm)}</b> scheduled km; <b class=r>${n0(k.lossKm)}</b> km lost.${top&&top.lossKm?` Highest loss destination: <b>${esc(top.l[0].dest)}</b> (${n0(top.lossKm)} km).`:''} <b class=a>${nv}</b> records need verification.</div><div class=mpr>${pb('Services operated',k.svcO,k.svcS,'#16A34A')}${pb('Trips completed',k.opT,k.schT,'#0891B2')}${pb('KMs operated',k.oKm,k.sKm,'#2563EB')}${pb('Fleet on road',k.buses,fl,'#7C3AED')}</div></div></div></div>
+ <div class="grid ovch">${CT.map((c,i)=>`<div class=cv style="--cc:${c[1]}"><div class=ch-h${c[2]?` title="${esc(c[2])}"`:''}>${c[0]}</div><div class=cw><canvas id=c${i+1}></canvas></div></div>`).join('')}</div></div>`}
+function ch(id,type,lab,sets,o={}){const el=document.getElementById(id);if(!el||!window.Chart)return;CH[id]?.destroy();
+ const dn=type==='doughnut',ln=type==='line',c=!!o.c,fmt=v=>{const a=Math.abs(v);return a>=1000?+(v/1000).toFixed(1)+'k':v},cmp=v=>{const a=Math.abs(v);return a>=1e6?+(v/1e6).toFixed(2)+'M':a>=1e3?+(v/1e3).toFixed(1)+'k':Math.round(v)},
+ gl=Chart.overrides&&Chart.overrides.doughnut&&Chart.overrides.doughnut.plugins.legend.labels.generateLabels,
+ tk={font:{size:9},color:'#475569'},gy={color:'#e8edf5'},
+ tt={callbacks:{label:x=>{const p=x.parsed,v=typeof p==='number'?p:(o.h?p.x:p.y),t=dn?x.dataset.data.reduce((a,b)=>a+(+b||0),0):0;return ` ${dn?x.label:(x.dataset.label||'')}: ${n0(v)}${dn&&t?` (${Math.round(v/t*100)}%)`:''}`}}},
+ pl=[];
+ if(c&&o.vl)pl.push({id:'vl',afterDatasetsDraw(x){const g=x.ctx;g.save();g.font='600 8.5px "Segoe UI",system-ui,sans-serif';g.fillStyle='#334155';g.textAlign='center';g.textBaseline='bottom';x.data.datasets.forEach((d,i)=>{const m=x.getDatasetMeta(i);if(m.hidden)return;m.data.forEach((b,j)=>{const v=d.data[j];if(v!=null)g.fillText(cmp(v),b.x,b.y-2)})});g.restore()}});
+ if(c&&o.ctr)pl.push({id:'ctr',afterDatasetsDraw(x){const a=x.chartArea,cx=(a.left+a.right)/2,cy=(a.top+a.bottom)/2,r=Math.min(a.right-a.left,a.bottom-a.top)/2,g=x.ctx,fs=Math.max(10,Math.min(17,r/3.2));g.save();g.textAlign='center';g.textBaseline='middle';g.fillStyle='#0f2a5f';g.font='800 '+fs+'px "Segoe UI",system-ui,sans-serif';g.fillText(o.ctr[0],cx,cy-(o.ctr[1]?fs*.35:0));if(o.ctr[1]){g.font='500 '+Math.max(8,fs*.55)+'px "Segoe UI",system-ui,sans-serif';g.fillStyle='#64748b';g.fillText(o.ctr[1],cx,cy+fs*.75)}g.restore()}});
+ const scales=!c||dn?undefined:(o.h?{y:{grid:{display:false},ticks:{...tk,font:{size:8.5},autoSkip:true,autoSkipPadding:0,padding:2}},x:{beginAtZero:true,grid:gy,border:{display:false},ticks:{...tk,callback:fmt,maxTicksLimit:5}}}:{x:{grid:{display:false},ticks:{...tk,autoSkip:!o.sk,maxRotation:50,minRotation:0}},y:{beginAtZero:true,grid:gy,border:{display:false},ticks:{...tk,callback:fmt,maxTicksLimit:5}}});
+ CH[id]=new Chart(el,{type,plugins:pl,data:{labels:lab,datasets:sets.map((s,i)=>({label:s[0],data:s[1],backgroundColor:s[2]||PAL[i%PAL.length],...(c?(dn?{borderColor:'#fff',borderWidth:1.5}:{borderRadius:3,maxBarThickness:o.h?16:44}):{}),...(ln?{borderColor:s[2]||PAL[i%PAL.length],borderWidth:2,tension:.3,pointRadius:2,pointHoverRadius:4,fill:false}:{})}))},
+ options:{responsive:true,maintainAspectRatio:false,indexAxis:o.h?'y':'x',onClick:o.cl,...(ln?{interaction:{mode:'index',intersect:false}}:{}),...(c?{layout:{padding:{top:o.vl?12:2,right:o.h?6:2,bottom:0,left:0}}}:{}),...(c&&dn?{cutout:'62%'}:{}),
+ plugins:{title:{display:!c,text:o.t},legend:{display:sets.length>1||dn,...(c?{position:dn?'right':'top',labels:{boxWidth:8,boxHeight:8,padding:dn?6:8,font:{size:9},...(dn?(gl?{generateLabels:cc=>{const a=gl(cc),d=cc.data.datasets[0].data,s=d.reduce((p,v)=>p+(+v||0),0)||1;return a.map(l=>({...l,text:`${l.text} ${Math.round(d[l.index]/s*100)}%`}))}}:{}):{usePointStyle:true})}}:{})},...(c?{tooltip:tt}:{})},
+ ...(scales?{scales}:{})}})}
+const SC={'Fully Operated':'#16A34A','Partially Operated':'#F59E0B','Partially Completed Round Trip':'#F97316','Not Operated':'#DC2626','Missing Return Leg':'#7C3AED','Missing Outward Leg':'#A78BFA','Data Verification Required':'#64748B'};
+/* Out-time / in-time timeline: counts of legs per hour of the day.
+   OUT = legs starting at the depot (departure from depot); RET = return legs (start time of the leg back to the depot). */
+const HRS=Array.from({length:24},(_,i)=>pad(i)+':00');
+function timeline(rs,dir){const s=Array(24).fill(0),a=Array(24).fill(0);
+ rs.filter(r=>r.dir===dir).forEach(r=>{if(r.sT!=null)s[Math.floor(r.sT/60)]++;if(r.op&&r.aT!=null)a[Math.floor(r.aT/60)]++});
+ return{s,a}}
+function charts(rs,k,F1,F2,fl){
+ if(window.Chart){Chart.defaults.color=getComputedStyle(document.body).color;Chart.defaults.font.size=10;Chart.defaults.plugins.title.font={size:11};Chart.defaults.plugins.tooltip.padding=7}
+ ch('c1','bar',['Scheduled','Operated','Loss'],[['KMs',[k.sKm,k.oKm,k.lossKm],[PAL[0],PAL[1],PAL[2]]]],{t:'Scheduled vs Operated vs Loss KMs',c:1,vl:1});
+ const TO=timeline(rs,'OUT'),TI=timeline(rs,'RET');
+ ch('c2','line',HRS,[['Scheduled out',TO.s,PAL[0]],['Actual out',TO.a,PAL[1]]],{t:'Out time – departures from depot',c:1});
+ ch('c3','line',HRS,[['Scheduled in',TI.s,PAL[5]],['Actual in',TI.a,PAL[3]]],{t:'In time – returns to depot',c:1});
+ const sv=gd(rs,r=>r.svc,[]).data,cnt={};   /* one entry per unique service no. – matches the Scheduled Services card */sv.forEach(x=>cnt[x.st]=(cnt[x.st]||0)+1);const ck=Object.keys(cnt),ct=ck.reduce((s,x)=>s+cnt[x],0);ch('c4','doughnut',ck,[['Services',ck.map(x=>cnt[x]),ck.map(x=>SC[x]||PAL[6])]],{t:'Service operation status',c:1,ctr:ct?[String(ct),'services']:null});
+ const od=rs.filter(r=>r.odo!=null);ch('c5','bar',['Actual KMs','Odometer KMs'],[['KMs',[sum(od,r=>r.aKm),sum(od,r=>r.odo)],[PAL[0],PAL[4]]]],{t:'Actual vs Odometer',c:1,vl:1});
+ const b=DS.bus(rs).data.sort((a,c)=>c.oKm-a.oKm).slice(0,15);ch('c6','bar',b.map(x=>x.l[0].bus),[['Op KMs',b.map(x=>x.oKm)]],{h:1,t:'Top 15 buses – operated KMs',c:1});
+ const l=gd(rs,r=>r.svc,[]).data.sort((a,c)=>c.lossKm-a.lossKm).slice(0,10);ch('c7','bar',l.map(x=>x.l[0].svc),[['Loss KMs',l.map(x=>x.lossKm),PAL[2]]],{h:1,t:'Top 10 services – loss KMs',c:1});
+ ch('c8','doughnut',['Operated','Not operated'],[['Buses',[k.buses,Math.max(0,fl-k.buses)],[PAL[1],PAL[6]]]],{t:'Fleet utilisation',c:1,ctr:fl>0?[Math.round(k.buses/fl*100)+'%','utilised']:null})}
+function vJbs(){const H=S.ctx.home,rs=rows().filter(r=>r.cat.startsWith('JBS'));if(!rs.length)return'<h3>JBS Express / Super Luxury</h3><p>No JBS records found (check Routes / Depot Name text contains "JBS").</p>';
+ return['JBS Express','JBS Super Luxury'].map((c,i)=>{const l=rs.filter(r=>r.cat===c),d=gd(l,r=>r.svc,[['Service',k=>k.l[0].svc],['Bus',k=>uniq(k.l,r=>r.bus)],['Shift',k=>uniq(k.l,r=>r.shift)],[H+'→JBS op/sched',k=>`${k.oo}/${k.so}`],['JBS→'+H+' op/sched',k=>`${k.or}/${k.sr}`],KC[3],KC[4],KC[5],['Missing Trips',k=>k.lossT],KC[6],['Driver',k=>uniq(k.l,r=>r.drv)||'(missing)'],ST]),k=K(l);
+  return `<h3>${c} – ${k.svcS} services, ${k.opT}/${k.schT} round trips, ${n0(k.oKm)} km operated</h3>`+tbl('jb'+i,d.cols,d.data)}).join('')}
+function vDay(){const rs=rows(0,1),ds=[...new Set(rs.map(r=>r.date))].sort(),data=ds.map(d=>{const k=K(rs.filter(r=>r.date===d));k.d=d;return k});
+ aft(()=>ch('cd','bar',ds,[['Operated KMs',data.map(k=>k.oKm)],['Loss KMs',data.map(k=>k.lossKm),PAL[2]]],{t:'Day-wise operated vs loss KMs'}));
+ return`<h3>Day-wise summary (uses all filters except date)</h3><div class=cv style="margin-bottom:10px"><canvas id=cd></canvas></div>`+tbl('day',[['Date',k=>k.d],['Services',k=>k.svcS],['Services operated',k=>k.svcO],['Buses on road',k=>k.buses],...KC.slice(0,8),['Status',k=>k.lossT?'Partially Operated':'Fully Operated']],data,k=>{S.tab='ov';setDate(k.d)})}
+function vDest(){const d=DS.dest(rows());return'<h3>Destination-wise report (click a row for its services)</h3>'+tbl('dest',d.cols,d.data,k=>{S.f.dest=k.l[0].dest;S.tab='svc';filters();render()})}
+function vSvc(){const d=DS.svc(rows());return'<h3>Service register</h3>'+tbl('svc',d.cols,d.data)}
+function vBus(){const d=DS.bus(rows()),x=d.data,op=x.filter(k=>k.opLegs),hi=[...op].sort((a,b)=>b.oKm-a.oKm)[0],lo=[...op].sort((a,b)=>a.oKm-b.oKm)[0];
+ return`<h3>Bus-wise performance</h3><div class="warn plain">Highest operated: ${hi?esc(hi.l[0].bus)+' ('+n0(hi.oKm)+' km)':'–'} · Lowest operated: ${lo?esc(lo.l[0].bus)+' ('+n0(lo.oKm)+' km)':'–'} · Zero operation: ${esc(x.filter(k=>!k.opLegs).map(k=>k.l[0].bus).join(', ')||'none')} · High km loss (top 5): ${esc([...x].sort((a,b)=>b.lossKm-a.lossKm).slice(0,5).map(k=>k.l[0].bus+' '+n0(k.lossKm)).join(', '))} · Odometer discrepancies > ${CFG.tol} km: ${x.filter(k=>Math.abs(k.diff)>CFG.tol).length}</div>`+tbl('bus',d.cols,x)}
+function vDrv(){const d=DS.drv(rows());return'<h3>Driver-wise report (km counted only on the rows each driver is entered against)</h3>'+tbl('drv',d.cols,d.data)}
+/* Loss tab: drill-down details behind the four summary cards */
+const LDC=[['Date',r=>dmy(r.date)],['Row',r=>String(r.i)],['Service',r=>r.svc],['Bus',r=>r.bus],['Driver',r=>r.drv||'—'],['Dest',r=>r.dest],['Dir',r=>r.dir],['Sch',r=>hm(r.sT)],['Sch Km',r=>r.sKm??0],['Act Km',r=>r.aKm??0],['Loss Km',r=>lk(r)],['Leg status',r=>!r.op?'Not operated':(r.aKm<(r.sKm||0)-1?'Partial':'Operated')],['Reason',r=>r.reason||'(not recorded)']];
+function lossDr(kind){
+ const rs=rows(),k=K(rs),sv=DS.svc(rs),open=r=>EntReport.open('svc',r.svc);
+ let title,note,tb;
+ if(kind==='no'||kind==='part'){
+  const d=sv.data.filter(x=>kind==='no'?x.st==='Not Operated':/^Partially/.test(x.st)).sort((a,b)=>b.lossKm-a.lossKm);
+  title=kind==='no'?'Services not operated':'Partially operated services';
+  note=`<b>${d.length}</b> service(s) · <b>${n0(sum(d,x=>x.lossKm))}</b> km lost · <b>${sum(d,x=>x.lossT)}</b> loss trip(s). Click a row to open that service's full report.`;
+  tb=d.length?tbl('ld',sv.cols,d,x=>EntReport.open('svc',x.l[0].svc)):'<p class=mut>None.</p>';
+ }else if(kind==='trips'){
+  const l=rs.filter(r=>r.pu&&!r.pu.done).sort((a,b)=>a.svc<b.svc?-1:a.svc>b.svc?1:a.i-b.i);
+  title='Loss trips – legs of round trips not completed';
+  note=`<b>${k.lossT}</b> round trip(s) not completed (<b>${l.length}</b> leg(s) listed, including the operated half of a one-sided trip). Click a row to open that service's report.`;
+  tb=l.length?tbl('ld',LDC,l,open):'<p class=mut>None.</p>';
+ }else{
+  const l=rs.filter(r=>lk(r)>0).sort((a,b)=>lk(b)-lk(a)),rz=Object.entries(by(l,r=>r.reason||'(not recorded)')).map(([a,x])=>[a,sum(x,lk)]).sort((x,y)=>y[1]-x[1]).slice(0,4);
+  title='Loss KMs – records with km loss';
+  note=`<b>${n0(k.lossKm)}</b> km lost across <b>${l.length}</b> record(s)${rz.length?' · top reasons: '+rz.map(x=>esc(x[0])+' ('+n0(x[1])+' km)').join('; '):''}. Sorted by highest loss; click a row to open that service's report.`;
+  tb=l.length?tbl('ld',LDC,l,open):'<p class=mut>None.</p>';
+ }
+ T.ld&&(T.ld.s=-1);
+ show(`<h3>${title}</h3><div class="warn plain">${note}</div>`+tb);
+}
+function vLoss(){const rs=rows(),k=K(rs),sv=DS.svc(rs).data,c=s=>sv.filter(x=>x.st===s).length,lr=rs.filter(r=>!r.op||lk(r)>0),
+ rz=Object.entries(by(lr,r=>r.reason||'Reason Not Recorded')).map(([a,l])=>({a,n:l.length,km:sum(l,lk)})).sort((x,y)=>y.km-x.km),LC=[KC[2],KC[3],KC[4],KC[5]];
+ const g=(id,f,lab)=>{const d=gd(rs,f,[[lab,k=>f(k.l[0])||'(missing)'],...LC]);d.data.sort((a,b)=>b.lossKm-a.lossKm);return tbl(id,d.cols,d.data)};
+ return`<div class=cards><div class=card onclick="lossDr('no')" title="Click for details"><small>Services not operated</small><b>${c('Not Operated')}</b><i>click for details</i></div><div class=card onclick="lossDr('part')" title="Click for details"><small>Partially operated</small><b>${c('Partially Operated')+c('Partially Completed Round Trip')}</b><i>click for details</i></div><div class=card onclick="lossDr('trips')" title="Click for details"><small>Loss trips</small><b>${k.lossT}</b><i>click for details</i></div><div class=card onclick="lossDr('km')" title="Click for details"><small>Loss KMs</small><b>${n0(k.lossKm)}</b><i>click for details</i></div></div>
+ <h3>Reasons recorded in DOR</h3>${tbl('rz',[['Reason',r=>r.a],['Records',r=>r.n],['Loss KMs',r=>r.km]],rz)}<h3>Shift-wise</h3>${g('l1',r=>r.shift,'Shift')}<h3>Destination-wise</h3>${g('l2',r=>r.dest,'Destination')}<h3>Route / service-wise</h3>${g('l3',r=>r.svc,'Service')}<h3>Bus-wise</h3>${g('l4',r=>r.bus,'Bus')}`}
+function vOdo(){const fl=k=>!k.opLegs&&!k.odo?'No operation':k.noOdo&&!k.odo?'Missing Odometer':Math.abs(k.diff)>CFG.abn?'Abnormal':k.diff>CFG.tol?'Positive (Act > Odo)':k.diff<-CFG.tol?'Negative (Act < Odo)':'Within tolerance';
+ const d=gd(rows(),r=>r.bus||'(missing)',[['Bus',k=>k.l[0].bus||'(missing)'],['Sched KMs',k=>k.sKm],['Op KMs (all)',k=>k.oKm],['Op KMs (rows with odo)',k=>sum(k.l.filter(r=>r.odo!=null),r=>r.aKm)],['Odo KMs',k=>k.odo],['Act−Odo',k=>k.diff],['Op rows w/o odo',k=>k.noOdo],['Flag',fl]]);
+ return`<h3>Odometer & kilometre reconciliation</h3><div class=bar>Tolerance km <input type=number value=${CFG.tol} style="width:80px" onchange="CFG.tol=+this.value;render()"> Abnormal above km <input type=number value=${CFG.abn} style="width:80px" onchange="CFG.abn=+this.value;render()"></div>`+tbl('odo',d.cols,d.data)}
+function dqStats(){const all=S.rows.filter(r=>!S.f.date||r.date===S.f.date),bad=all.filter(r=>r.is.length),A=K(rows(1)),sh=s=>K(rows(1).filter(r=>r.shift===s)),t=(a,b)=>Math.abs(a-b)<.01?'✓':'✗',
+ sd=sum(DS.dest(rows()).data,k=>k.oKm),sb=sum(DS.bus(rows()).data,k=>k.oKm),K0=K(rows());
+ return{all,bad,A,sh,t,sd,sb,K0}}
+function vDq(){const {all,bad,A,sh,t,sd,sb,K0}=dqStats();
+ const c=(l,v)=>`<div class=card style="cursor:default"><small>${l}</small><b>${v}</b></div>`;
+ return`<h3>Data quality & verification</h3><div class=cards>${c('Records processed',all.length)}${c('Valid (no issue)',all.length-bad.length)}${c('Duplicates (kept, flagged)',all.filter(r=>r.dup).length)}${c('Need verification',bad.length)}${c('Unrecognized routes',all.filter(r=>r.dest==='Unknown').length)}${c('Unmatched legs',all.filter(r=>r.is.some(x=>/Unmatched/.test(x))).length)}${c('Excluded blank/total rows',S.skipped.length)}</div>
+ ${S.skipped.length?`<p>Excluded Excel rows (no service no. and no bus no.): ${esc(S.skipped.slice(0,40).join(', '))}</p>`:''}
+ <h3>Reconciliation checks</h3><ul><li>${t(sh('First').oKm+sh('Second').oKm+sh('Unknown').oKm,A.oKm)} First + Second (+Unknown) operated KMs = daily total</li><li>${t(sh('First').opT+sh('Second').opT+sh('Unknown').opT,A.opT)} Shift operated trips = daily total</li><li>${t(sd,K0.oKm)} Destination-wise operated KMs = total</li><li>${t(sb,K0.oKm)} Bus-wise operated KMs = total</li><li>${t(K0.lossKm,K0.calcLoss)} Reported Route Km Loss vs (Scheduled − Actual): ${n0(K0.lossKm)} vs ${n0(K0.calcLoss)}</li></ul>
+ <h3>Exceptions (never deleted)</h3>${tbl('dq',RC,bad)}`}
+const VS={ov:vOv,day:vDay,jbs:vJbs,dest:vDest,svc:vSvc,bus:vBus,drv:vDrv,loss:vLoss,odo:vOdo,dq:vDq},TL={ov:'Overview',day:'Day-wise',jbs:'JBS',dest:'Destinations',svc:'Services',bus:'Buses',drv:'Drivers',loss:'Loss',odo:'Odometer',dq:'Data Quality'};
+const IC={ov:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',day:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',jbs:'<rect x="4" y="3" width="16" height="14" rx="2"/><path d="M4 11h16M8 21v-4M16 21v-4"/>',dest:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',svc:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',bus:'<rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',drv:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',loss:'<path d="M23 18l-9.5-9.5-5 5L1 6"/><path d="M17 18h6v-6"/>',odo:'<circle cx="12" cy="12" r="10"/><path d="M12 12l4-4"/>',dq:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>'};
+/* ============ DATE / FILTERS / RENDER ============ */
+function setDate(v){S.f.date=v||'';S.mapRep=null;if(Hooks.onDate)Hooks.onDate(S.f.date);filters();render()}
+function filters(){const R=S.rows,u=f=>[...new Set(R.map(f).filter(Boolean))].sort(),ds=S.reports.map(r=>r.date).sort(),cur=S.f.date||'';
+ const list=cur&&!ds.includes(cur)?[...ds,cur].sort():ds;
+ $('#fd').innerHTML=(ds.length?`<option value="" ${cur?'':'selected'}>All dates (consolidated)</option>`:'')+list.map(x=>`<option value="${x}" ${x===cur?'selected':''}>${dmy(x)}${ds.includes(x)?'':' – no report'}</option>`).join('')||'<option value="">No reports</option>';
+ const o=(id,a,v,all)=>$(id).innerHTML=`<option value="">${all}</option>`+a.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('');
+ o('#fc',u(r=>r.cat),S.f.cat,'All categories');o('#fx',u(r=>r.dest),S.f.dest,'All destinations');
+ $('#fs').value=S.f.shift||'';$('#fq').value=S.f.q||''}
+function sf(k,v){if(k==='date')return setDate(v);S.f[k]=v;render()}
+function emptyBlock(t,m){return `<div class="emptybox"><strong>${t}</strong><p>${m}</p><button class="pri" onclick="pickUpload()">⬆ Upload DOR Excel</button></div>`}
+function render(){
+ if(!S.depot)return;
+ document.body.classList.toggle('ovf',S.tab==='ov');
+ $('#tabs').innerHTML=Object.keys(TL).map(k=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';render()"><svg viewBox="0 0 24 24" aria-hidden="true">${IC[k]||''}</svg><span>${TL[k]}</span></button>`).join('');
+ $('#dTitle').textContent=S.depot.name+' – Daily Operations Report (DOR) Dashboard';
+ const sel=S.f.date,scope=sel?S.reports.filter(r=>r.date===sel):S.reports;
+ $('#fleetClear').style.display=S.fleet?'':'none';
+ if(!S.reports.length){$('#warn').innerHTML='';$('#map').innerHTML='';$('#info').textContent='No report loaded';$('#view').innerHTML=emptyBlock('No Report Available','No DOR has been uploaded for '+esc(S.depot.name)+' yet. Upload the DOR Excel to see the dashboard.');return}
+ if(!scope.length){$('#warn').innerHTML='';$('#map').innerHTML='';
+  $('#info').textContent=`Depot: ${S.depot.name} · Reporting date: ${dmy(sel)} · No report`;
+  $('#view').innerHTML=`<div class="emptybox"><strong>No Report Available for ${dmy(sel)}</strong><p>${esc(S.depot.name)} has no DOR uploaded for this date. Reports exist for:</p><div class="chips">${S.reports.map(r=>r.date).sort().map(d=>`<button class="chip ok" onclick="setDate('${d}')">${dmy(d)}</button>`).join('')}</div><p><button onclick="setDate('')">View all dates</button> <button class="pri" onclick="pickUpload()">⬆ Upload DOR Excel</button></p></div>`;return}
+ const badScope=scope.filter(r=>REQ.some(k=>!(r.map[k]>=0)));
+ if(!S.mapRep||!scope.some(r=>r.key===S.mapRep))S.mapRep=(badScope[0]||scope[0]).key;
+ const mrep=S.reports.find(r=>r.key===S.mapRep);S.map=mrep.map;S.hdr=mrep.hdr;
+ const miss=REQ.filter(k=>!(S.map[k]>=0)),w=[],pre=r=>scope.length>1?`[${dmy(r.date)}] `:'';
+ const blocked=!!sel&&badScope.length>0;
+ scope.slice(0,12).forEach(r=>{
+  if(r.noSheet)w.push(`${pre(r)}No sheet named "Dor" found – using "${esc(r.sheet)}".`);
+  const nf=OPT_WARN.filter(k=>!(r.map[k]>=0));if(nf.length)w.push(`${pre(r)}Columns not detected: `+nf.map(k=>LBL[k]).join(', ')+' – related calculations are limited or flagged.');
+  if(!(r.map.cat>=0)&&!(r.map.model>=0))w.push(`${pre(r)}No Bus Category/Model column: Express vs Deluxe cannot be separated for non-JBS services (shown as "Other").`);
+ });
+ if(!sel&&badScope.length)w.push('Excluded from consolidated figures until their columns are mapped: '+badScope.map(r=>dmy(r.date)).join(', ')+'.');
+ $('#warn').innerHTML=(miss.length&&(blocked||badScope.length)?`<div class=warn><b>Required column missing${scope.length>1?' ('+dmy(mrep.date)+')':''}:</b> ${miss.map(k=>LBL[k]).join(', ')}. Map it below${blocked?' – no figures are shown until then':''}.</div>`:'')+[...new Set(w)].map(x=>`<div class=warn>${x}</div>`).join('');
+ $('#map').innerHTML=`<details ${miss.length?'open':''}><summary>Column mapping (${Object.values(S.map).filter(x=>x>=0).length}/${Object.keys(F).length} detected) – override if wrong</summary>${scope.length>1?`<div class=bar>Report: <select onchange="S.mapRep=this.value;render()">${scope.map(r=>`<option value="${esc(r.key)}" ${r.key===S.mapRep?'selected':''}>${dmy(r.date)} – ${esc(r.fileName)}</option>`).join('')}</select></div>`:''}<div class=mg>${Object.keys(F).map(k=>`<div><label>${LBL[k]}</label><select onchange="setMap('${k}',this.value)"><option value=-1>— not mapped —</option>${S.hdr.map((h,i)=>`<option value=${i} ${S.map[k]===i?'selected':''}>${esc(h)}</option>`).join('')}</select></div>`).join('')}</div></details>`;
+ const files=[...new Set(scope.map(r=>r.fileName))];
+ $('#info').textContent=`Depot: ${S.depot.name} · Reporting date: ${sel?dmy(sel):'All dates ('+scope.length+' reports)'} · File: ${files.length>1?files.length+' files':files[0]} · Records: ${S.rows.filter(r=>!sel||r.date===sel).length}`;
+ if(blocked){$('#view').innerHTML='';return}
+ S.after=null;$('#view').innerHTML=S.tab==='all'?Object.values(VS).map(f=>f()).join(''):VS[S.tab]();S.after&&S.after()}
+async function setMap(k,v){const rep=S.reports.find(r=>r.key===S.mapRep);if(!rep)return;rep.map[k]=+v;if(Hooks.onMap)await Hooks.onMap(rep);rebuild();filters();render()}
+function pr(full){const t=S.tab;if(full)S.tab='all';render();setTimeout(()=>{print();S.tab=t;render()},800)}
+/* ============ fleet master (optional, per depot) ============ */
+function bindDashboardInputs(){
+ $('#fleet').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{busy(true,'Reading fleet master…');const b=await readFile(f),wb=XLSX.read(b,{type:'array'}),a=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+   const arr=[...new Set(a.map(r=>String(r[0]).trim().toUpperCase()).filter(x=>x&&!/^(bus|sl|no|s\.?no)/i.test(x)))];
+   if(!arr.length)throw new Error('No bus numbers found in the first column.');
+   S.fleet=new Set(arr);if(Hooks.onFleet)await Hooks.onFleet(arr);render();toast(`Fleet master loaded: ${arr.length} buses.`,'ok')}
+  catch(x){toast('Could not read fleet master: '+x.message,'err')}finally{busy(false)}};
+ $('#fleetClear').onclick=async()=>{S.fleet=null;if(Hooks.onFleet)await Hooks.onFleet(null);render();toast('Fleet master removed; Total Fleet now = unique buses in DOR.','ok')};
+}
+
+</script>
+<script>
+/* reports.js — Excel / PDF exports: depot-wise, date-wise, destination / bus / driver / data-quality, and the consolidated multi-depot report. */
+'use strict';
+const fileBase=()=>`${slug(S.depot.name)}_${S.f.date||'All-Dates'}`;
+const KPI_HEAD=['Total Fleet','Buses on Road','Scheduled Services','Operated Services','Scheduled Trips','Operated Trips','Loss Trips','Scheduled KMs','Operated KMs','Loss KMs','Odometer KMs','Actual − Odo Diff'];
+const kpiRow=s=>[s.fleet,s.onRoad,s.schServices,s.opServices,s.schTrips,s.opTrips,s.lossTrips,s.schKm,s.opKm,s.lossKm,s.odoKm,s.diff];
+const needData=()=>{if(!S.rows.length){toast('No report data loaded for this depot/date.','warn');return true}return false};
+const addSheet=(wb,n,a)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),n.slice(0,31));
+
+/* Depot-wise Excel report (selected depot + selected date or all dates) — the original multi-sheet export */
+function xl(){if(needData())return;const rs=rows(),k=K(rs),wb=XLSX.utils.book_new();
+ addSheet(wb,'Summary',[['Depot',S.depot.name],['Report date',S.f.date?dmy(S.f.date):'All dates'],['Files',[...new Set(S.reports.filter(r=>!S.f.date||r.date===S.f.date).map(r=>r.fileName))].join(', ')],['Scheduled services',k.svcS],['Operated services',k.svcO],['Buses on road',k.buses],['Scheduled trips',k.schT],['Operated trips',k.opT],['Loss trips',k.lossT],['Scheduled KMs',k.sKm],['Operated KMs',k.oKm],['Loss KMs',k.lossKm],['Odo KMs',k.odo],['Actual − Odo',k.diff]]);
+ const sh=['First','Second','Unknown'].map(s=>[s,K(rows(1).filter(r=>r.shift===s))]);
+ addSheet(wb,'Shifts',[['Shift','Sched services','Op services','Sched trips','Op trips','Loss trips','Sched KMs','Op KMs','Loss KMs','Odo KMs','Buses'],...sh.map(([s,x])=>[s,x.svcS,x.svcO,x.schT,x.opT,x.lossT,x.sKm,x.oKm,x.lossKm,x.odo,x.buses])]);
+ [['Destinations','dest'],['Services','svc'],['Buses','bus'],['Drivers','drv']].forEach(([n,f])=>{const d=DS[f](rs);addSheet(wb,n,aoa(d.cols,d.data))});
+ addSheet(wb,'Exceptions',aoa(RC,rs.filter(r=>r.is.length)));
+ XLSX.writeFile(wb,`DOR_Report_${fileBase()}.xlsx`)}
+
+/* Date-wise Excel report: one row per reporting date for this depot (all filters except date apply) */
+function xlDates(){if(needData())return;const rs=rows(0,1),ds=[...new Set(rs.map(r=>r.date))].sort(),wb=XLSX.utils.book_new();
+ const fl=S.fleet?S.fleet.size:0,head=['Date','File',...KPI_HEAD,'Status'];
+ const lines=ds.map(d=>{const x=rs.filter(r=>r.date===d),s=Engine.summaryOf(x,fl),rep=S.reports.find(r=>r.date===d);return[dmy(d),rep?rep.fileName:'',...kpiRow(s),s.lossTrips?'Partially Operated':'Fully Operated']});
+ addSheet(wb,'Date-wise',[[`${S.depot.name} – date-wise DOR summary`],head,...lines]);
+ const tot=Engine.summaryOf(rs,fl);addSheet(wb,'All dates total',[['Depot',S.depot.name],['Dates covered',ds.map(dmy).join(', ')],...KPI_HEAD.map((h,i)=>[h,kpiRow(tot)[i]])]);
+ XLSX.writeFile(wb,`DOR_DateWise_${slug(S.depot.name)}.xlsx`)}
+
+/* Destination-, bus-, driver-wise and data quality reports */
+function xlSet(kind){if(needData())return;const rs=rows(),wb=XLSX.utils.book_new(),names={dest:'Destination-wise',bus:'Bus-wise',drv:'Driver-wise',svc:'Service-wise'};
+ if(kind==='dq'){const {all,bad,A,sh,t,sd,sb,K0}=dqStats();
+  addSheet(wb,'Summary',[['Depot',S.depot.name],['Report date',S.f.date?dmy(S.f.date):'All dates'],['Records processed',all.length],['Valid (no issue)',all.length-bad.length],['Duplicates (kept, flagged)',all.filter(r=>r.dup).length],['Need verification',bad.length],['Unrecognized routes',all.filter(r=>r.dest==='Unknown').length],['Unmatched legs',all.filter(r=>r.is.some(x=>/Unmatched/.test(x))).length],['Excluded blank/total rows',S.skipped.length],['Excluded row numbers',S.skipped.join(', ')]]);
+  addSheet(wb,'Reconciliation',[['Check','Result'],['First + Second (+Unknown) operated KMs = daily total',t(sh('First').oKm+sh('Second').oKm+sh('Unknown').oKm,A.oKm)],['Shift operated trips = daily total',t(sh('First').opT+sh('Second').opT+sh('Unknown').opT,A.opT)],['Destination-wise operated KMs = total',t(sd,K0.oKm)],['Bus-wise operated KMs = total',t(sb,K0.oKm)],['Reported loss km vs (Scheduled − Actual)',t(K0.lossKm,K0.calcLoss)+` (${n0(K0.lossKm)} vs ${n0(K0.calcLoss)})`]]);
+  const issueRows=[];S.reports.filter(r=>!S.f.date||r.date===S.f.date).forEach(rep=>{const v=rep.validation;if(v)issueRows.push([dmy(rep.date),rep.fileName,v.records,v.excluded,v.emptyRows,v.missingBus,v.missingSvc,v.missingDepot,v.missingDriver,v.invalidDate,v.formulaErr,v.kmIssues,v.duplicates,v.flagged])});
+  addSheet(wb,'Upload validation',[['Date','File','Records','Excluded rows','Empty rows','Missing bus','Missing service','Missing depot','Missing driver','Invalid date','Formula errors','Km issues','Duplicates','Records flagged'],...issueRows]);
+  addSheet(wb,'Exceptions',aoa([['Date',r=>dmy(r.date)],...RC],bad));
+  XLSX.writeFile(wb,`DOR_DataQuality_${fileBase()}.xlsx`);return}
+ const d=DS[kind](rs);addSheet(wb,names[kind],[[`${S.depot.name} – ${names[kind]} report – ${S.f.date?dmy(S.f.date):'All dates'}`],...aoa(d.cols,d.data)]);
+ XLSX.writeFile(wb,`DOR_${names[kind]}_${fileBase()}.xlsx`)}
+
+/* ============ CONSOLIDATED MULTI-DEPOT REPORT (only the chosen depots and dates; depots never merged into each other) ============ */
+async function consData(depIds,dates){
+ const out=[],missing=[];
+ for(const id of depIds){
+  const d=APP.depots.find(x=>x.id===id);if(!d)continue;
+  const ctx=Engine.makeCtx(d.config),fl=(APP.fleet[id]||[]).length||0;
+  const reps=(APP.reports[id]||[]).filter(r=>dates.includes(r.date)&&r.status==='Processed').sort((a,b)=>a.date<b.date?-1:1);
+  dates.forEach(dt=>{if(!reps.some(r=>r.date===dt))missing.push([d.name,dt])});
+  if(!reps.length)continue;
+  const all=[],per=[];
+  reps.forEach(rep=>{const b=Engine.buildRows(rep,ctx);b.rows.forEach(r=>all.push(r));per.push({date:rep.date,file:rep.fileName,sum:Engine.summaryOf(b.rows,fl)})});
+  out.push({depot:d,per,rows:all,total:Engine.summaryOf(all,fl)});
+ }
+ return{out,missing};
+}
+function consSheets(c,dates){
+ const head=['Depot','Date','File',...KPI_HEAD],lines=[];
+ c.out.forEach(o=>o.per.forEach(p=>lines.push([o.depot.name,dmy(p.date),p.file,...kpiRow(p.sum)])));
+ const tot=[],net=new Array(12).fill(0);
+ c.out.forEach(o=>{const r=kpiRow(o.total);tot.push([o.depot.name,o.per.length+' date(s)',...r]);r.forEach((v,i)=>net[i]+=v)});
+ tot.push(['NETWORK TOTAL (selected depots)','',...net]);
+ return{head,lines,totHead:['Depot','Dates included',...KPI_HEAD],tot};
+}
+async function consolidatedExcel(depIds,dates){
+ const c=await consData(depIds,dates);if(!c.out.length){toast('No reports match the selected depots and dates.','warn');return}
+ const s=consSheets(c,dates),wb=XLSX.utils.book_new();
+ addSheet(wb,'Consolidated',[['CHAKRA E-TRANS – Consolidated DOR report'],s.head,...s.lines]);
+ addSheet(wb,'Depot totals',[['Totals per depot over the selected dates (services/buses counted once per depot)'],s.totHead,...s.tot]);
+ addSheet(wb,'Selection',[['Depots',c.out.map(o=>o.depot.name).join(', ')],['Dates',dates.slice().sort().map(dmy).join(', ')],['Missing (depot – date)',c.missing.map(m=>m[0]+' – '+dmy(m[1])).join('; ')||'none'],['Generated',new Date().toLocaleString('en-IN')]]);
+ const ex=[];c.out.forEach(o=>o.rows.filter(r=>r.is.length).forEach(r=>ex.push([o.depot.name,dmy(r.date),...RC.map(x=>x[1](r))])));
+ addSheet(wb,'Exceptions',[['Depot','Date',...RC.map(x=>x[0])],...ex]);
+ XLSX.writeFile(wb,`CHAKRA_Consolidated_DOR_${new Date().toISOString().slice(0,10)}.xlsx`);
+ toast(`Consolidated Excel generated: ${c.out.length} depot(s), ${s.lines.length} report(s).`,'ok');
+}
+async function consolidatedPdf(depIds,dates){
+ const c=await consData(depIds,dates);if(!c.out.length){toast('No reports match the selected depots and dates.','warn');return}
+ const s=consSheets(c,dates),cell=v=>typeof v==='number'?`<td class=n>${n0(v)}</td>`:`<td>${esc(v)}</td>`;
+ const tb=(h,r)=>`<table><thead><tr>${h.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${r.map(l=>`<tr>${l.map(cell).join('')}</tr>`).join('')}</tbody></table>`;
+ $('#printArea').innerHTML=`<h1>CHAKRA E-TRANS – Consolidated DOR Report</h1><p>Depots: ${esc(c.out.map(o=>o.depot.name).join(', '))} · Dates: ${esc(dates.slice().sort().map(dmy).join(', '))} · Generated ${esc(new Date().toLocaleString('en-IN'))}</p><h2>Depot totals</h2>${tb(s.totHead,s.tot)}<h2>Depot-wise, date-wise</h2>${tb(s.head,s.lines)}${c.missing.length?`<p class=note>No report for: ${esc(c.missing.map(m=>m[0]+' – '+dmy(m[1])).join('; '))}</p>`:''}`;
+ document.body.classList.add('print-cons');
+ const done=()=>{document.body.classList.remove('print-cons');$('#printArea').innerHTML='';window.removeEventListener('afterprint',done)};
+ window.addEventListener('afterprint',done);setTimeout(()=>{print();setTimeout(done,1500)},150);
+}
+
+</script>
+<script>
+/* app.js — CHAKRA E-TRANS: depot registry + DOR reports by depot and date, upload flow (button in the dashboard action bar),
+   depot selector, history, settings, consolidated report. All uploaded data lives in IndexedDB (storage.js). */
+'use strict';
+const APP={depots:[],reports:{},sel:{},fleet:{},cache:{},cur:null};   // reports[depotId] = [report…], sel[depotId] = 'YYYY-MM-DD' | 'ALL', fleet[depotId] = [bus…]
+const SEL_KEY='chakra.dor.sel.v1',CUR_KEY='chakra.dor.cur.v1';
+const depot=id=>APP.depots.find(d=>d.id===id);
+const tick=()=>new Promise(r=>setTimeout(r,30));
+const todayISO=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+const stamp=ts=>ts?new Date(ts).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+let EXPECT=null;                                              // date expected by "Replace" in History (null for a normal upload)
+
+/* ---------- small UI helpers ---------- */
+function toast(msg,type='ok',ms=5000){const el=document.createElement('div');el.className='toast '+type;el.setAttribute('role','status');el.textContent=msg;$('#toasts').appendChild(el);setTimeout(()=>el.remove(),ms)}
+function busy(on,msg){$('#busy').style.display=on?'flex':'none';if(msg)$('#busyMsg').textContent=msg}
+function amodal(html){$('#ab').innerHTML=html;$('#am').style.display='flex'}
+function closeAm(){$('#am').style.display='none';$('#ab').innerHTML=''}
+
+/* ---------- state persistence helpers ---------- */
+function saveSel(){try{localStorage.setItem(SEL_KEY,JSON.stringify(APP.sel))}catch(e){}}
+function bump(id){Object.keys(APP.cache).forEach(k=>{if(k.startsWith(id+'|'))delete APP.cache[k]})}
+function setReport(rep){const l=APP.reports[rep.depotId]=(APP.reports[rep.depotId]||[]).filter(r=>r.key!==rep.key);l.push(rep);l.sort((a,b)=>a.date<b.date?-1:1);bump(rep.depotId)}
+const fleetSizeOf=id=>(APP.fleet[id]||[]).length||0;
+function defaultSel(id){const l=APP.reports[id]||[];return l.length?l[l.length-1].date:todayISO()}
+async function recomputeDepot(id){
+ const d=depot(id),ctx=Engine.makeCtx(d.config),fl=fleetSizeOf(id);
+ for(const rep of APP.reports[id]||[]){rep.depotName=d.name;Engine.evaluate(rep,ctx,fl);await Store.saveReport(rep)}
+ bump(id);
+}
+
+/* ---------- UPLOAD FLOW ---------- */
+function pickUpload(expect){EXPECT=(typeof expect==='string'&&expect)?expect:null;const f=$('#dorFile');f.value='';f.click()}
+async function handleUpload(id,file,expect){
+ const d=depot(id);if(!d||!file)return;
+ if(!/\.(xlsx|xls)$/i.test(file.name)){toast(`"${file.name}" is not supported. Please upload an .xlsx or .xls DOR workbook.`,'err');return}
+ busy(true,`Reading ${file.name}…`);
+ try{
+  await tick();const buf=await readFile(file);
+  busy(true,'Detecting worksheet, headers and dates…');await tick();
+  const p=Engine.parseWorkbook(buf,file.name);let sel=expect||APP.sel[id],groups;
+  try{groups=Engine.splitByDate(p,sel)}
+  catch(err){
+   if(!/no usable Date/.test(err.message))throw err;
+   busy(false);
+   const a=prompt(`${file.name} has no usable Date column.\n\nEnter the reporting date for this DOR (DD-MM-YYYY):`,dmy(ISO.test(sel||'')?sel:todayISO())),nd=a?normDate(a.trim()):'';
+   if(!nd){toast('Upload cancelled — no valid reporting date was entered.','warn');return}
+   sel=nd;busy(true,'Processing DOR…');await tick();groups=Engine.splitByDate(p,nd);
+  }
+  const have=APP.reports[id]||[],repl=groups.filter(g=>have.some(r=>r.date===g.date)),msg=[];
+  if(groups.length>1)msg.push(`${file.name} contains ${groups.length} reporting dates (${dmy(groups[0].date)} → ${dmy(groups[groups.length-1].date)}). Each date will be stored as a separate report for ${d.name}.`);
+  else if(expect&&groups[0].date!==expect)msg.push(`The Date column in ${file.name} is ${dmy(groups[0].date)}, but you chose to replace ${dmy(expect)}. The report will be stored under ${dmy(groups[0].date)}.`);
+  if(repl.length)msg.push(`This replaces the existing ${d.name} report${repl.length>1?'s':''} for: ${repl.map(g=>dmy(g.date)).join(', ')}.`);
+  if(msg.length){busy(false);if(!confirm(msg.join('\n\n')+'\n\nContinue?')){toast('Upload cancelled — nothing was changed.','warn');return}busy(true,'Processing DOR…');await tick()}
+  const made=[];
+  for(const [i,g] of groups.entries()){
+   busy(true,`Calculating ${dmy(g.date)} (${i+1}/${groups.length})…`);await tick();
+   const rep=Engine.makeReport(d,g.date,p,g.items,file.name,fleetSizeOf(id),i===0?p.emptyRows:0);
+   await Store.saveReport(rep);setReport(rep);made.push(rep);
+  }
+  APP.sel[id]=groups.length===1?groups[0].date:(groups.some(g=>g.date===sel)?sel:groups[groups.length-1].date);saveSel();
+  showDepot(id);
+  const bad=made.filter(r=>r.status!=='Processed'),flagged=made.reduce((a,r)=>a+(r.validation?r.validation.flagged:0),0);
+  if(bad.length)toast(`${file.name} stored, but required columns are missing — map them under "Column mapping" below.`,'warn',8000);
+  else toast(`${d.name}: ${made.length} report${made.length>1?'s':''} processed from ${file.name}${flagged?` — ${flagged} record${flagged>1?'s':''} flagged for verification`:''}.`,flagged?'warn':'ok',6000);
+  if(bad.length||flagged||p.emptyRows||!Store.persistent||made.some(r=>r.validation&&r.validation.excluded))uploadSummary(d,made,p);
+ }catch(e){toast('Upload failed: '+e.message,'err',9000)}
+ finally{busy(false)}
+}
+function uploadSummary(d,reps,p){
+ const th=['Date','Status','Records','Excluded rows','Empty rows','Missing bus','Missing service','Missing depot','Missing driver','Invalid date','Formula errors','Km issues','Duplicates','Flagged'];
+ const tr=reps.map(r=>{const v=r.validation;return v?[dmy(r.date),r.status,v.records,v.excluded,v.emptyRows,v.missingBus,v.missingSvc,v.missingDepot,v.missingDriver,v.invalidDate,v.formulaErr,v.kmIssues,v.duplicates,v.flagged]:[dmy(r.date),r.status+' – missing: '+(r.missing||[]).map(k=>LBL[k]).join(', '),'','','','','','','','','','','','']});
+ const notes=[];
+ if(p.noSheet)notes.push(`No worksheet named "Dor" was found; "${esc(p.sheet)}" was used.`);
+ if(!Store.persistent)notes.push('Browser storage (IndexedDB) is unavailable, so reports will be lost when this page is closed.');
+ notes.push('Nothing is discarded: flagged rows stay in the dashboard and are listed under Data Quality. Empty rows and blank/total rows (no service and no bus number) are excluded from calculations.');
+ amodal(`<h3>Upload summary – ${esc(d.name)}</h3><p class="mut">${esc(p.file)} · sheet ${esc(p.sheet)}</p><div class="tw"><table><thead><tr>${th.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${tr.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${notes.map(n=>`<p class="mut">${n}</p>`).join('')}<p class="mact"><button class="pri" data-act="close">OK</button></p>`);
+}
+async function removeReport(id,date){
+ const d=depot(id),rep=(APP.reports[id]||[]).find(r=>r.date===date);if(!rep)return;
+ if(!confirm(`Remove the ${d.name} DOR report for ${dmy(date)} (${rep.fileName})?\n\nThis cannot be undone. Other dates and other depots are not affected.`))return;
+ try{await Store.removeReport(rep.key);APP.reports[id]=APP.reports[id].filter(r=>r.key!==rep.key);bump(id);APP.sel[id]=defaultSel(id);saveSel();showDepot(id);toast(`${d.name}: report for ${dmy(date)} removed.`,'ok')}
+ catch(e){toast('Could not remove report: '+e.message,'err')}
+}
+/* ---------- HISTORY ---------- */
+function historyModal(id){
+ const d=depot(id),rs=APP.reports[id]||[],byDate=Object.fromEntries(rs.map(r=>[r.date,r]));let list=rs.map(r=>r.date);
+ if(!rs.length){amodal(`<h3>Report history – ${esc(d.name)}</h3><p class="mut">No DOR has been uploaded for this depot yet.</p><p class="mact"><button class="pri" data-act="close">Close</button></p>`);return}
+ {const a=new Date(rs[0].date+'T00:00:00Z'),b=new Date(rs[rs.length-1].date+'T00:00:00Z'),n=Math.round((b-a)/864e5)+1;
+  if(n<=400){list=[];for(let i=0;i<n;i++)list.push(new Date(a.getTime()+i*864e5).toISOString().slice(0,10))}}
+ list.sort().reverse();
+ const rowsH=list.map(dt=>{const r=byDate[dt];return r?`<tr><td>${dmy(dt)}</td><td class="s-ok">DOR Uploaded${r.status!=='Processed'?' <span class="s-w">(mapping required)</span>':''}</td><td>${esc(r.fileName)}</td><td>${stamp(r.uploadTimestamp)}</td><td>${r.validation?n0(r.validation.records):'—'}</td><td class="acts"><button data-act="hview" data-date="${dt}" data-id="${esc(id)}">View</button> <button data-act="hrepl" data-date="${dt}" data-id="${esc(id)}">Replace</button> <button class="danger" data-act="hdel" data-date="${dt}" data-id="${esc(id)}">Remove</button></td></tr>`:`<tr><td>${dmy(dt)}</td><td class="mut">No Report</td><td>—</td><td>—</td><td>—</td><td class="acts"><button data-act="hrepl" data-date="${dt}" data-id="${esc(id)}">Upload</button></td></tr>`}).join('');
+ amodal(`<h3>Report history – ${esc(d.name)}</h3><div class="tw"><table><thead><tr><th>Date</th><th>Status</th><th>File</th><th>Uploaded</th><th>Records</th><th>Actions</th></tr></thead><tbody>${rowsH}</tbody></table></div><p class="mact"><button class="pri" data-act="close">Close</button></p>`);
+}
+/* ---------- DEPOT SETTINGS / ADD DEPOT ---------- */
+function settingsModal(id){
+ const d=depot(id),c=d.config;
+ amodal(`<h3>Depot settings – ${esc(d.name)}</h3><div class="form">
+ <label>Depot name<input id="s_name" value="${esc(d.name)}"></label>
+ <label>Home stop code<input id="s_home" value="${esc(c.home)}"><small>Legs starting here are “outward”; used for trip pairing (default KNR).</small></label>
+ <label>Home stop spellings (comma separated)<input id="s_alias" value="${esc(c.homeAliases)}"><small>Spellings in the “Depot Name” column that mean the home stop.</small></label>
+ <label>Extra destination aliases<input id="s_dest" value="${esc(c.destAliases)}" placeholder="e.g. peddapalli=PDPL, sircilla=SRC"></label>
+ <label>Odometer tolerance (km)<input id="s_tol" type="number" value="${c.tol}"></label>
+ <label>Abnormal odometer difference above (km)<input id="s_abn" type="number" value="${c.abn}"></label></div>
+ <p class="mact"><button class="pri" data-act="savesettings" data-id="${esc(id)}">Save &amp; recalculate</button><button data-act="close">Cancel</button></p>`);
+}
+async function saveSettings(id){
+ const d=depot(id),name=$('#s_name').value.trim();if(!name){toast('Depot name cannot be empty.','err');return}
+ if(APP.depots.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast('Another depot already uses that name.','err');return}
+ d.name=name;d.config={home:($('#s_home').value.trim()||'KNR').toUpperCase(),homeAliases:$('#s_alias').value.trim(),destAliases:$('#s_dest').value.trim(),tol:+$('#s_tol').value||0,abn:+$('#s_abn').value||0};
+ busy(true,'Recalculating reports…');
+ try{await tick();await Store.saveDepot(d);await recomputeDepot(id);closeAm();showDepot(id);toast(`${d.name}: settings saved and reports recalculated.`,'ok')}
+ catch(e){toast('Could not save settings: '+e.message,'err')}finally{busy(false)}
+}
+function addDepotModal(){amodal(`<h3>Add depot</h3><div class="form"><label>Depot name<input id="n_name" placeholder="e.g. Depot 4"></label></div><p class="mact"><button class="pri" data-act="adddepot">Add</button><button data-act="close">Cancel</button></p>`);setTimeout(()=>{const i=$('#n_name');i&&i.focus()},30)}
+async function addDepot(){
+ const name=($('#n_name').value||'').trim();if(!name){toast('Enter a depot name.','err');return}
+ if(APP.depots.some(x=>x.name.toLowerCase()===name.toLowerCase())){toast('A depot with that name already exists.','err');return}
+ let id=slug(name),n=2;while(depot(id))id=slug(name)+'-'+n++;
+ const d={id,name,order:APP.depots.length+1,config:Engine.defaultConfig()};
+ await Store.saveDepot(d);APP.depots.push(d);APP.reports[id]=[];APP.sel[id]=todayISO();saveSel();closeAm();toast(`${name} added.`,'ok');
+ location.hash='#/depot/'+encodeURIComponent(id);
+}
+/* ---------- CONSOLIDATED REPORT MODAL ---------- */
+let CONS={deps:new Set(),dates:new Set(),init:false};
+function consolidatedModal(){
+ const deps=APP.depots.filter(d=>(APP.reports[d.id]||[]).some(r=>r.status==='Processed'));
+ if(!deps.length){toast('Upload at least one DOR report first.','warn');return}
+ CONS={deps:new Set(deps.map(d=>d.id)),dates:null};renderCons();
+}
+function consDates(){const s=new Set();CONS.deps.forEach(id=>(APP.reports[id]||[]).forEach(r=>{if(r.status==='Processed')s.add(r.date)}));return[...s].sort().reverse()}
+function renderCons(){
+ const dates=consDates();if(CONS.dates===null)CONS.dates=new Set(dates);else CONS.dates=new Set([...CONS.dates].filter(x=>dates.includes(x)));
+ const sel=[...CONS.dates];let pairs=0;CONS.deps.forEach(id=>sel.forEach(dt=>{if((APP.reports[id]||[]).some(r=>r.date===dt&&r.status==='Processed'))pairs++}));
+ amodal(`<h3>Consolidated multi-depot report</h3><p class="mut">Only the depots and dates ticked below are for the day. Depots are never merged into one another — each depot is calculated separately, then listed side by side.</p>
+ <div class="cols2"><fieldset><legend>Depots</legend>${APP.depots.map(d=>{const has=(APP.reports[d.id]||[]).some(r=>r.status==='Processed');return `<label class="ck"><input type="checkbox" data-cons="dep" value="${esc(d.id)}" ${CONS.deps.has(d.id)?'checked':''} ${has?'':'disabled'}> ${esc(d.name)}${has?'':' <em>(no report)</em>'}</label>`}).join('')}</fieldset>
+ <fieldset><legend>Dates <button class="lnk" data-act="consall">all</button> <button class="lnk" data-act="consnone">none</button></legend><div class="dlist">${dates.map(dt=>`<label class="ck"><input type="checkbox" data-cons="date" value="${dt}" ${CONS.dates.has(dt)?'checked':''}> ${dmy(dt)}</label>`).join('')||'<em>Select a depot</em>'}</div></fieldset></div>
+ <p><b>${pairs}</b> depot-date report${pairs===1?'':'s'} selected.</p>
+ <p class="mact"><button class="pri" data-act="consxl" ${pairs?'':'disabled'}>Download Excel</button><button data-act="conspdf" ${pairs?'':'disabled'}>Download PDF (print)</button><button data-act="close">Close</button></p>`);
+}
+/* ---------- NAVIGATION (depot selector + #/depot/<id>) ---------- */
+function showDepot(id){
+ const d=depot(id);if(!d)return;
+ APP.cur=id;try{localStorage.setItem(CUR_KEY,id)}catch(e){}
+ document.title=d.name+' – CHAKRA E-TRANS';
+ const s=APP.sel[id];
+ loadDepot({depot:d,reports:APP.reports[id]||[],fleet:APP.fleet[id]||null,ctx:Engine.makeCtx(d.config),date:s==='ALL'?'':s});
+}
+function route(){
+ const m=location.hash.match(/^#\/depot\/(.+)$/);let id=m?decodeURIComponent(m[1]):null;
+ if(!id||!depot(id)){let sv=null;try{sv=localStorage.getItem(CUR_KEY)}catch(e){}id=depot(sv)?sv:(APP.depots[0]&&APP.depots[0].id)}
+ if(id)showDepot(id);
+}
+function openDepot(id,date){
+ if(date)APP.sel[id]=date;saveSel();const h='#/depot/'+encodeURIComponent(id);if(location.hash===h)route();else location.hash=h;
+}
+
+/* ---------- EVENT WIRING ---------- */
+function wire(){
+ $('#am').addEventListener('click',async e=>{
+  if(e.target===$('#am')){closeAm();return}
+  const b=e.target.closest('[data-act]');if(!b)return;const act=b.dataset.act,id=b.dataset.id,dt=b.dataset.date;
+  if(act==='close')closeAm();
+  else if(act==='hview'){closeAm();openDepot(id,dt)}
+  else if(act==='hrepl'){closeAm();pickUpload(dt)}
+  else if(act==='hdel'){closeAm();await removeReport(id,dt);historyModal(id)}
+  else if(act==='savesettings')saveSettings(id);
+  else if(act==='adddepot')addDepot();
+  else if(act==='consall'){CONS.dates=new Set(consDates());renderCons()}
+  else if(act==='consnone'){CONS.dates=new Set();renderCons()}
+  else if(act==='consxl'||act==='conspdf'){const deps=[...CONS.deps],dates=[...CONS.dates];busy(true,'Building consolidated report…');try{await tick();if(act==='consxl')await consolidatedExcel(deps,dates);else{closeAm();await consolidatedPdf(deps,dates)}}catch(x){toast('Report failed: '+x.message,'err')}finally{busy(false)}}
+ });
+ $('#am').addEventListener('change',e=>{const c=e.target.dataset.cons;if(!c)return;
+  if(c==='dep'){e.target.checked?CONS.deps.add(e.target.value):CONS.deps.delete(e.target.value);CONS.dates=CONS.dates===null?null:CONS.dates}
+  else{e.target.checked?CONS.dates.add(e.target.value):CONS.dates.delete(e.target.value)}
+  renderCons()});
+ $('#consBtn').onclick=consolidatedModal;$('#addBtn').onclick=addDepotModal;
+ /* upload / history / remove (action bar) */
+ $('#bUp').onclick=()=>pickUpload();
+ $('#dorFile').onchange=e=>{const f=e.target.files[0],ex=EXPECT;e.target.value='';EXPECT=null;if(f&&APP.cur)handleUpload(APP.cur,f,ex)};
+ $('#bHist').onclick=()=>historyModal(APP.cur);
+ $('#bRem').onclick=()=>{const dt=S.f.date;if(!dt){toast('Select a single reporting date in the date filter first, then click Remove.','warn');return}
+  if(!(APP.reports[APP.cur]||[]).some(r=>r.date===dt)){toast('There is no report for that date.','warn');return}removeReport(APP.cur,dt)};
+ /* dashboard toolbar */
+ $('#bXl').onclick=xl;$('#bDates').onclick=xlDates;$('#bDest').onclick=()=>xlSet('dest');$('#bBus').onclick=()=>xlSet('bus');$('#bDrv').onclick=()=>xlSet('drv');$('#bDq').onclick=()=>xlSet('dq');
+ $('#bPdf').onclick=()=>pr(true);$('#bPdfTab').onclick=()=>pr(false);
+ $('#bSet').onclick=()=>settingsModal(S.depot.id);
+ bindDashboardInputs();
+ addEventListener('hashchange',route);
+ addEventListener('keydown',e=>{if(e.key==='Escape'){closeAm();$('#md').style.display='none'}});
+}
+/* dashboard → app hooks */
+Hooks.onDate=v=>{if(!S.depot)return;APP.sel[S.depot.id]=v||'ALL';saveSel()};
+Hooks.onMap=async rep=>{const d=depot(rep.depotId);Engine.evaluate(rep,Engine.makeCtx(d.config),fleetSizeOf(d.id));await Store.saveReport(rep);bump(d.id)};
+Hooks.onFleet=async arr=>{const id=S.depot.id;if(arr&&arr.length){APP.fleet[id]=arr;await Store.setMeta('fleet:'+id,arr)}else{delete APP.fleet[id];await Store.delMeta('fleet:'+id)}
+ await recomputeDepot(id)};
+
+/* ---------- STARTUP ---------- */
+async function init(){
+ busy(true,'Loading stored reports…');
+ try{
+  await Store.init();
+  if(!Store.persistent)$('#banner').innerHTML='<div class="warn">Browser storage (IndexedDB) is not available in this browser mode — uploaded reports will not survive a refresh.</div>';
+  let ds=await Store.depots();
+  if(!ds.length){ds=[{id:'karimnagar-depot-2',name:'Karimnagar Depot 2',order:1,config:Engine.defaultConfig()}];for(const d of ds)await Store.saveDepot(d)}
+  ds.sort((a,b)=>(a.order||0)-(b.order||0));APP.depots=ds;
+  ds.forEach(d=>{d.config=Object.assign(Engine.defaultConfig(),d.config||{});APP.reports[d.id]=[]});
+  (await Store.allReports()).forEach(r=>{(APP.reports[r.depotId]=APP.reports[r.depotId]||[]).push(r)});
+  Object.values(APP.reports).forEach(l=>l.sort((a,b)=>a.date<b.date?-1:1));
+  for(const d of ds){const f=await Store.getMeta('fleet:'+d.id);if(f&&f.length)APP.fleet[d.id]=f}
+  {/* existing install: the depot in use (still named "Depot N") becomes "Karimnagar Depot 2" – its stored reports are untouched */
+   let cid=null;try{cid=localStorage.getItem(CUR_KEY)}catch(e){}
+   const tg=ds.find(d=>d.id===cid)||ds[0],KN='Karimnagar Depot 2';
+   if(tg&&/^depot\s*\d+$/i.test(tg.name.trim())&&!ds.some(d=>d!==tg&&d.name===KN)){tg.name=KN;await Store.saveDepot(tg);(APP.reports[tg.id]||[]).forEach(r=>{r.depotName=KN})}}
+  let saved={};try{saved=JSON.parse(localStorage.getItem(SEL_KEY)||'{}')}catch(e){}
+  ds.forEach(d=>{const s=saved[d.id],has=(APP.reports[d.id]||[]).some(r=>r.date===s);APP.sel[d.id]=(s==='ALL'||(ISO.test(s||'')&&has))?s:defaultSel(d.id)});
+  wire();route();
+ }catch(e){toast('Startup problem: '+e.message,'err',10000)}
+ finally{busy(false)}
+}
+init();
+
+</script>
+<script>
+/* zoom: enlarge a chart or the shift table in the modal (display only; no data logic) */
+(function(){
+ let zc=null;
+ const add=()=>{document.querySelectorAll('#view .ovch .cv:not([data-z]),#view .ovmid>div:first-child:not([data-z])').forEach(el=>{el.dataset.z=1;const b=document.createElement('button');b.type='button';b.className='zb np';b.title='Zoom';b.setAttribute('aria-label','Zoom');b.textContent='\u2922';el.appendChild(b)})};
+ new MutationObserver(add).observe(document.getElementById('view'),{childList:true,subtree:true});
+ document.addEventListener('click',e=>{const b=e.target.closest('.zb');if(!b)return;e.stopPropagation();
+  const host=b.parentElement,cv=host.querySelector('canvas');
+  if(cv){const src=CH[cv.id];if(!src)return;try{zc&&zc.destroy()}catch(x){}
+   show('<div class="zwrap"><canvas id="zc"></canvas></div>');
+   const c=src.config,t=c.type,n=c.data.datasets.length;
+   zc=new Chart(document.getElementById('zc'),{type:t,data:JSON.parse(JSON.stringify(c.data)),options:{responsive:true,maintainAspectRatio:false,indexAxis:src.options.indexAxis,font:{size:13},plugins:{title:{display:true,text:src.options.plugins.title.text,font:{size:16}},legend:{display:n>1||t==='doughnut'}}}})}
+  else{const tw=host.querySelector('.tw');if(tw)show('<div class="zwrap zt">'+tw.outerHTML+'</div>')}
+ },true);
+})();
+</script>
+<style>
+/* ===== Entity search (bus / service / driver) ===== */
+.esr{margin-left:auto;display:flex;gap:6px;align-items:center}
+.esr input{width:270px;border-color:var(--navy2)}
+.mb:has(.er){width:min(1400px,98vw)}
+.er .eh{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.er h2{margin:0;color:var(--navy);font-size:19px}
+.er .tag{display:inline-block;background:var(--navy);color:#fff;border-radius:4px;padding:1px 8px;font-size:11px;letter-spacing:.08em;margin-right:8px;vertical-align:middle}
+.er .sub{color:var(--m);font-size:12.5px;margin-top:2px}
+.er h4{margin:16px 0 6px;color:var(--navy);border-left:3px solid var(--navy2);padding-left:8px;font-size:14px}
+.er .kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}
+.er .kc{background:#fff;border-radius:8px;border-left:4px solid var(--navy2);padding:8px 10px;box-shadow:0 1px 3px #0f2a5f1a}
+.er .kc small{display:block;color:var(--m);font-weight:600;font-size:11px}.er .kc b{font-size:20px;color:var(--navy)}
+.er .kc.bad{border-left-color:var(--bad)}.er .kc.bad b{color:var(--bad)}.er .kc.ok{border-left-color:var(--ok)}.er .kc.ok b{color:var(--ok)}
+.er .kc.st b{font-size:13px}
+.er .pf{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:4px 18px;background:#fff;border-radius:8px;padding:10px 12px}
+.er .pf div{display:flex;gap:8px}.er .pf span{color:var(--m);min-width:96px}.er .pf b{font-weight:600;word-break:break-word}
+.er .sm{background:#fff;border-radius:8px;padding:10px 12px;line-height:1.6;border:1px solid var(--b)}
+.er .sm .r{color:var(--bad)}.er .sm .g{color:var(--ok)}
+.er .okn{color:var(--ok);font-weight:600;background:#fff;border-radius:8px;padding:8px 12px}
+.er .tbar{display:flex;gap:8px}
+.ehd{position:sticky;top:-16px;z-index:3;background:var(--bg);padding:8px 0 10px;margin:-8px 0 4px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.ptabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pt{border-radius:20px;padding:5px 14px;background:#fff}
+.pt.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.pc{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;color:var(--m);border:1px solid var(--b);border-radius:20px;padding:2px 8px;background:#fff}
+.pc.on{border-color:var(--navy);box-shadow:0 0 0 1px var(--navy)}
+.pc input{padding:3px 6px}.pc button{padding:3px 10px;border-radius:14px}
+.chs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+@media print{
+ @page ent{size:A4 landscape;margin:8mm}
+ body.print-ent #printArea{page:ent}
+ #printArea .er .kg{grid-template-columns:repeat(6,1fr)}#printArea .er .kc b{font-size:14px}
+ #printArea .er h4,#printArea .er .tw{break-inside:avoid-page}
+}
+</style>
+<style id="responsive-layer">
+/* ===== RESPONSIVE LAYER (phone / tablet / laptop / large screens) — appended last so it overrides earlier rules ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+img,canvas,svg{max-width:100%}
+body{overflow-x:clip}
+.grid{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+#view .grid:not(.ovch){grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
+.er .pf{grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))}
+.tw{-webkit-overflow-scrolling:touch}
+
+/* small laptops: let the filter bar wrap instead of overflowing */
+@media(max-width:1280px){
+ #flt{flex-wrap:wrap}
+ #flt #fq{flex:1 1 220px}
+}
+
+/* ---------- tablet & phone: no sidebar, tabs become a sticky scrollable strip ---------- */
+@media(max-width:1024px){
+ main{display:block;padding:8px 10px}
+ main>#tabs{display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+  position:sticky;top:0;z-index:6;margin:6px 0;padding:6px;gap:4px;background:#fff;border-radius:14px;box-shadow:var(--sh)}
+ #tabs button{flex:0 0 auto;white-space:nowrap;color:var(--navy);text-shadow:none}
+ #tabs button.on{color:#fff}
+ .dbar{flex-wrap:wrap;padding:6px 10px;gap:8px}
+ .dbar b{white-space:normal;font-size:15px;flex:1 1 200px}
+ .dbar .info{flex:1 1 100%;width:100%;margin:0;white-space:normal;overflow:visible}
+ .esr,.upl{margin-left:0;width:100%}
+ .esr input{flex:1 1 auto;width:auto;min-width:0}
+ .upl button{flex:1 1 auto}
+ #flt{flex-wrap:wrap}
+ .ovmid{grid-template-columns:1fr}
+ .ovmid .tw{overflow-x:auto}
+ .ovmid th,.ovmid td{padding:6px 9px;font-size:11px}
+ .ovch .cv{height:240px}
+ #view .ovch{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .app-h nav{margin-left:0}
+}
+
+/* ---------- phone ---------- */
+@media(max-width:700px){
+ .app-h{gap:8px;padding:8px 12px}
+ .logo{width:34px;height:34px;font-size:12px}
+ .ttl h1{font-size:17px}
+ .ttl small{font-size:9.5px;letter-spacing:.06em}
+ .app-h nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%}
+ .app-h .nb,#depSel{padding:7px 4px;font-size:11.5px;min-height:38px;white-space:normal;line-height:1.15;max-width:none}
+ .dbar .nb{min-height:34px}
+ #actbar{gap:6px}
+ #actbar button,#actbar .btn{flex:1 1 auto;justify-content:center;min-height:34px;font-size:12px}
+ .esr{flex-wrap:wrap}.esr input{flex:1 1 100%}.esr button{flex:1 1 100%}
+ #flt select,#flt input:not([type=checkbox]){flex:1 1 45%;width:auto!important;min-width:0}
+ #flt #fq{flex:1 1 100%}
+ .ovg .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .ovg .card b{font-size:clamp(15px,5vw,19px)}
+ .ovg .card i{white-space:normal}
+ #view .ovch{grid-template-columns:1fr}
+ .ovch .cv{height:230px}
+ .mpr{grid-template-columns:1fr}
+ .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .card b{font-size:22px}
+ .cv{height:260px}
+ .cols2{grid-template-columns:1fr}
+ /* modals: near full-screen sheets */
+ .modal{padding:0;align-items:flex-end}
+ .mb{width:100%;max-height:94vh;padding:12px;border-radius:14px 14px 0 0}
+ .mb:has(.er){width:100%}
+ .ehd{top:-12px}
+ .ptabs{gap:4px}.pt{padding:5px 10px;font-size:12.5px}
+ .pc{flex-wrap:wrap}
+ .er h2{font-size:16px}
+ .er .kg{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .zwrap{height:60vh}
+ #toasts{left:10px;right:10px;bottom:10px;max-width:none}
+}
+@media(max-width:380px){
+ .ttl h1{font-size:15px}
+ .app-h .nb,#depSel{font-size:10.5px}
+}
+
+/* ---------- touch devices: bigger tap targets, no iOS auto-zoom on inputs ---------- */
+@media(pointer:coarse){
+ button,.btn,select,input:not([type=checkbox]){min-height:40px}
+ input:not([type=checkbox]),select,textarea,#flt select,#flt input:not([type=checkbox]){font-size:16px}
+ .chip{min-height:32px}
+ .zb{width:30px;min-height:30px;font-size:15px;opacity:1}
+ .ck input,#flt input[type=checkbox]{width:18px;height:18px}
+ #tabs button{min-height:40px}
+}
+
+/* very large / wide monitors: keep content readable */
+@media(min-width:2000px){
+ main{max-width:2000px}
+}
+
+/* ===== PRINT / PDF FIX: tables must wrap inside the page, never be clipped (appended last) ===== */
+@media print{
+ @page{size:A4 landscape;margin:8mm}
+ @page ent{size:A4 landscape;margin:8mm}
+ html,body{height:auto!important;width:auto!important;overflow:visible!important;background:#fff!important}
+ body,body.ovf{display:block!important;font-size:9px}
+ #depotView{display:block!important}
+ main,.dcol{display:block!important;overflow:visible!important;height:auto!important;max-width:none!important;margin:0!important;padding:0!important}
+ #view{position:static!important;min-height:0!important;height:auto!important}
+ .ovg{position:static!important;display:flex!important;flex-direction:column;gap:6px}
+ .ovmid{display:block!important}.ovmid>.pn{margin-bottom:6px}
+ .pn,.dcol,.cv,.card{box-shadow:none!important}
+ .cards,.ovg .cards{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+ #view .ovch{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .ovch .cv,.cv{height:200px!important;break-inside:avoid;page-break-inside:avoid}
+ canvas{max-width:100%!important}
+ /* tables: no horizontal scroll box, wrap text, repeat header on each page, never split a row */
+ .tw,.ovmid .tw,.zt{overflow:visible!important;max-height:none!important;border:1px solid #cbd5e1!important;border-radius:0!important;box-shadow:none!important}
+ table,#printArea table,.ovmid table{width:100%!important;max-width:100%!important;table-layout:auto!important;border-collapse:collapse!important;font-size:7.5px!important}
+ th,td,.ovmid th,.ovmid td,#printArea th,#printArea td{white-space:normal!important;word-break:normal;overflow-wrap:anywhere;padding:2px 3px!important;font-size:7.5px!important;line-height:1.25;border:1px solid #cbd5e1!important;position:static!important;box-shadow:none!important}
+ th{text-transform:none!important;letter-spacing:0!important;background:#0f2a5f!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ td,tbody tr td:first-child,tbody tr:nth-child(even) td:first-child{background:#fff!important}
+ tbody tr:nth-child(even) td{background:#f3f6fb!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ thead{display:table-header-group}
+ tr{break-inside:avoid;page-break-inside:avoid}
+ h3,h4{break-after:avoid;page-break-after:avoid}
+ .pg,.zb,.np{display:none!important}
+ .warn,.emptybox,details{break-inside:avoid}
+}
+</style>
+<script>
+/* entity-report.js — search a Bus No. / Service (Route) No. / Driver ID and get its complete report
+   (summary, KPIs, leg-by-leg log, day-wise, related-entity breakdown, loss, odometer, data issues) with Excel + PDF export.
+   Uses the same rows, filters and K() engine as the rest of the dashboard — no new business logic. */
+(function(){
+'use strict';
+const TY={bus:['Bus',r=>r.bus],svc:['Service',r=>r.svc],drv:['Driver',r=>String(r.drv||'').toUpperCase()]};
+const base=()=>S.rows.filter(r=>!(CFG.nodup&&r.dup));
+const dts=()=>[...new Set(base().map(r=>r.date))].sort();
+const addD=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
+const scope=per=>base().filter(r=>r.date>=per.from&&r.date<=per.to);
+const plabel=per=>per.from===per.to?dmy(per.from):dmy(per.from)+' to '+dmy(per.to);
+/* period presets: Selected day / Today / Latest day / Last 7 days / All days / Custom from–to */
+function mkPer(mode){
+ const ds=dts(),first=ds[0]||'',last=ds[ds.length-1]||'';
+ if(mode==='sel')return{mode,from:S.f.date,to:S.f.date};
+ if(mode==='today')return{mode,from:todayISO(),to:todayISO()};
+ if(mode==='latest')return{mode,from:last,to:last};
+ if(mode==='l7')return{mode,from:addD(last,-6),to:last};
+ if(mode==='custom'){let a=$('#pf')&&$('#pf').value||first,b=$('#pto')&&$('#pto').value||last;if(a>b)[a,b]=[b,a];return{mode,from:a,to:b}}
+ return{mode:'all',from:first,to:last};
+}
+let ENT=null;
+
+/* ---------- search ---------- */
+function fillList(){
+ const dl=document.getElementById('eql');if(!dl||!S.depot)return;
+ const v=new Set();base().forEach(r=>[r.bus,r.svc,r.drv].forEach(x=>{if(x)v.add(String(x))}));
+ dl.innerHTML=[...v].sort().map(x=>`<option value="${esc(x)}">`).join('');
+}
+function find(q){
+ q=q.trim().toUpperCase();const rs=base(),out={exact:[],part:[]};
+ for(const t in TY){const m=new Map();rs.forEach(r=>{const v=TY[t][1](r);if(!v)return;if(!m.has(v))m.set(v,0);m.set(v,m.get(v)+1)});
+  m.forEach((n,v)=>{if(v===q)out.exact.push({t,k:v,n});else if(v.includes(q))out.part.push({t,k:v,n})})}
+ return out}
+function go(){
+ if(!S.depot||!S.rows.length){toast('No report data loaded for this depot/date.','warn');return}
+ const q=$('#eq').value;if(!q.trim()){toast('Type a bus number, service number or driver ID.','warn');return}
+ const f=find(q);
+ if(f.exact.length===1)return open(f.exact[0].t,f.exact[0].k);
+ if(!f.exact.length&&f.part.length===1)return open(f.part[0].t,f.part[0].k);
+ const l=f.exact.length?f.exact:f.part.slice(0,60);
+ if(!l.length){toast(`No bus, service or driver matching "${q.trim()}" in the loaded reports.`,'warn');return}
+ $('#mb').innerHTML=`<div class="er"><h2>${f.exact.length?'"'+esc(q.trim())+'" matches more than one record type':'No exact match for "'+esc(q.trim())+'" – did you mean:'}</h2><p class="mut">Pick one to open its full report${!f.exact.length&&f.part.length>60?' (showing first 60 of '+f.part.length+')':''}.</p><div class="chs">${l.map(x=>`<button class="chip ok" data-et="${x.t}" data-ek="${esc(x.k)}">${TY[x.t][0]} · ${esc(x.k)} <small>(${x.n} legs)</small></button>`).join('')}</div><p><button onclick="$('#md').style.display='none'">Close</button></p></div>`;
+ $('#md').style.display='flex';
+}
+
+/* ---------- model ---------- */
+const dly=r=>{if(!r.op||r.sT==null||r.aT==null)return'';let d=r.aT-r.sT;if(d<-720)d+=1440;if(d>720)d-=1440;return d};
+const lst=r=>!r.op?'Not operated':(r.aKm<(r.sKm||0)-1?'Partial':'Operated');
+const dff=r=>r.op&&r.odo!=null?+(r.aKm-r.odo).toFixed(1):'';
+const oflag=r=>{if(!r.op)return'';if(r.odo==null)return'Missing odometer';const d=r.aKm-r.odo;return Math.abs(d)>CFG.abn?'Abnormal':d>CFG.tol?'Act > Odo':d<-CFG.tol?'Act < Odo':'OK'};
+const LOG=[['Date',r=>dmy(r.date)],['Row',r=>String(r.i)],['Service',r=>r.svc],['Bus',r=>r.bus],['Driver',r=>r.drv||'—'],['Route',r=>r.routes],['Dest',r=>r.dest],['Dir',r=>r.dir],['Shift',r=>r.shift],['Sch start',r=>hm(r.sT)],['Act start',r=>hm(r.aT)],['Delay (min)',r=>dly(r)],['Sch Km',r=>r.sKm??0],['Act Km',r=>r.aKm??0],['Loss Km',r=>lk(r)],['Odo Km',r=>r.odo==null?'—':r.odo],['Act−Odo',r=>dff(r)],['Status',lst],['Reason',r=>r.reason],['Issues',r=>r.is.join('; ')]];
+const LOSSC=[['Date',r=>dmy(r.date)],['Row',r=>String(r.i)],['Service',r=>r.svc],['Bus',r=>r.bus],['Driver',r=>r.drv||'—'],['Dest',r=>r.dest],['Dir',r=>r.dir],['Sch start',r=>hm(r.sT)],['Sch Km',r=>r.sKm??0],['Act Km',r=>r.aKm??0],['Loss Km',r=>lk(r)],['Status',lst],['Reason',r=>r.reason||'(not given)']];
+const ODOC=[['Date',r=>dmy(r.date)],['Row',r=>String(r.i)],['Bus',r=>r.bus],['Service',r=>r.svc],['Act Km',r=>r.aKm??0],['Odo Km',r=>r.odo==null?'—':r.odo],['Act−Odo',r=>dff(r)],['Flag',oflag]];
+const ISSC=[['Date',r=>dmy(r.date)],['Row',r=>String(r.i)],['Service',r=>r.svc],['Bus',r=>r.bus],['Driver',r=>r.drv||'—'],['Issues',r=>r.is.join('; ')]];
+const BK=['Legs',...[]];
+function model(t,k,per){
+ const f=TY[t][1],rs=scope(per).filter(r=>f(r)===k).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.i-b.i);
+ const kp=K(rs),dates=[...new Set(rs.map(r=>r.date))],dd=rs.map(dly).filter(x=>x!==''),avgD=dd.length?sum(dd,x=>x)/dd.length:null;
+ const lossy=rs.filter(r=>!r.op||lk(r)>0),odoEx=rs.filter(r=>!['','OK'].includes(oflag(r))),iss=rs.filter(r=>r.is.length);
+ const prof=[['Depot',S.depot.name],['Reporting period',`${plabel(per)} (${dates.length} day${dates.length===1?'':'s'} with data)`],['Legs in DOR',rs.length],
+  ...['bus','svc','drv'].filter(x=>x!==t).map(x=>[TY[x][0]+'(s)',uniq(rs,r=>TY[x][1](r))||'—']),
+  ['Route(s)',uniq(rs,r=>r.routes)||'—'],['Category',uniq(rs,r=>r.cat)||'—'],['Bus model',uniq(rs,r=>r.model)||'—'],['Shift',uniq(rs,r=>r.shift)||'—'],['Destination(s)',uniq(rs,r=>r.dest)||'—'],
+  ['Days operated',`${new Set(rs.filter(r=>r.op).map(r=>r.date)).size} of ${dates.length}`]];
+ const all=gd(scope(per),r=>f(r)||'(missing)',[]).data,met=t==='svc'?x=>x.lossKm:x=>x.oKm;all.sort((a,b)=>met(b)-met(a));
+ const idx=all.findIndex(x=>f(x.l[0])===k),act=all.filter(x=>x.opLegs),avg=act.length?sum(act,x=>x.oKm)/act.length:0;
+ const rank=idx<0?'':t==='svc'?`Ranks #${idx+1} of ${all.length} services by km loss (highest loss = #1).`:`Ranks #${idx+1} of ${all.length} ${TY[t][0].toLowerCase()}s by operated km (average ${n0(avg)} km per ${TY[t][0].toLowerCase()} that operated).`;
+ const reasons=uniq(lossy,r=>r.reason);
+ const sm=`<b>${esc(TY[t][0])} ${esc(k)}</b> had <b>${rs.length}</b> scheduled leg(s); <b>${kp.opLegs}</b> operated. Completed <b>${kp.opT}</b> of <b>${kp.schT}</b> round trips (<b class="${kp.lossT?'r':'g'}">${kp.lossT}</b> lost). Operated <b>${n0(kp.oKm)}</b> of <b>${n0(kp.sKm)}</b> scheduled km; <b class="${kp.lossKm?'r':'g'}">${n0(kp.lossKm)}</b> km lost${reasons?` (reason: ${esc(reasons)})`:''}. `+
+  `Odometer ${n0(kp.odo)} km vs actual ${n0(kp.oKm-sum(rs.filter(r=>r.odo==null),r=>r.aKm))} km (difference ${kp.diff>=0?'+':''}${n0(kp.diff)}). `+(avgD==null?'':`Average start delay ${avgD>=0?'+':''}${avgD.toFixed(0)} min (+ = late). `)+(iss.length?`<b class="r">${iss.length}</b> record(s) need verification. `:'No data-quality issues. ')+esc(rank);
+ const sc=[['Legs',k=>k.n],...KC.slice(0,7)],bcols=o=>[[TY[o][0],x=>TY[o][1](x.l[0])||'(missing)'],['Shift',x=>uniq(x.l,r=>r.shift)],['Destination',x=>uniq(x.l,r=>r.dest)],...sc,ST];
+ const brk=['bus','svc','drv'].filter(x=>x!==t).map(o=>({o,label:TY[o][0]+'-wise',cols:bcols(o),data:gd(rs,r=>TY[o][1](r)||'(missing)',[]).data}));
+ const days=dates.length>1?{cols:[['Date',x=>dmy(x.l[0].date)],...sc,KC[7],ST],data:gd(rs,r=>r.date,[]).data}:null;
+ return{t,k,per,rs,kp,dates,avgD,prof,sm,rank,brk,days,lossy,odoEx,iss,nOdoOk:rs.filter(r=>oflag(r)==='OK').length};
+}
+
+/* ---------- HTML ---------- */
+const cell=(l,v)=>/^(Status|Flag)$/.test(l)?(/^(Fully|Operated|OK|Within)/.test(v)?'s-ok':/Not|Missing|Verif|Abnormal|Zero/.test(v)?'s-bad':v?'s-w':''):'';
+const st=(cols,data)=>!data.length?'<p class="mut">None.</p>':`<div class="tw"><table><thead><tr>${cols.map(c=>`<th>${esc(c[0])}</th>`).join('')}</tr></thead><tbody>${data.map(r=>`<tr>${cols.map(c=>{const v=c[1](r);return typeof v==='number'?`<td class="n">${n0(v)}</td>`:`<td class="${cell(c[0],v)}">${v===''||v==null?'-':esc(v)}</td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
+const kc=(l,v,c='')=>`<div class="kc ${c}"><small>${l}</small><b>${v}</b></div>`;
+function html(m){
+ const k=m.kp,sgn=x=>(x>=0?'+':'')+n0(x);
+ const head=`<div class="eh"><div><h2><span class="tag">${TY[m.t][0].toUpperCase()}</span>${esc(m.k)} – Complete Report</h2><div class="sub">${esc(S.depot.name)} · Period: <b>${esc(plabel(m.per))}</b> · generated ${esc(new Date().toLocaleString('en-IN'))}</div></div></div>`;
+ if(!m.rs.length)return head+`<div class="okn" style="color:var(--w)">No records for ${TY[m.t][0].toLowerCase()} ${esc(m.k)} in ${esc(plabel(m.per))}. Pick another period above.</div>`;
+ return head+
+ `<h4>Summary</h4><div class="sm">${m.sm}</div>`+
+ `<h4>Key figures</h4><div class="kg">${kc('Scheduled trips',n0(k.schT))}${kc('Operated trips',n0(k.opT),'ok')}${kc('Loss trips',n0(k.lossT),k.lossT?'bad':'')}${kc('Scheduled KMs',n0(k.sKm))}${kc('Operated KMs',n0(k.oKm),'ok')}${kc('Loss KMs',n0(k.lossKm),k.lossKm?'bad':'')}${kc('Odometer KMs',n0(k.odo))}${kc('Actual − Odo',sgn(k.diff),Math.abs(k.diff)>CFG.tol?'bad':'')}${kc('Avg start delay',m.avgD==null?'–':sgn(Math.round(m.avgD))+' min')}${k.soc?kc('SOC consumed (sum of legs)',n0(k.soc)):''}${kc('Status',esc(k.st),'st '+(/^Fully/.test(k.st)?'ok':/Not|Missing|Verif/.test(k.st)?'bad':''))}</div>`+
+ `<h4>Profile</h4><div class="pf">${m.prof.map(p=>`<div><span>${esc(p[0])}</span><b>${esc(p[1])}</b></div>`).join('')}</div>`+
+ `<h4>Leg-by-leg log (${m.rs.length})</h4>${st(LOG,m.rs)}`+
+ (m.days?`<h4>Day-wise</h4>${st(m.days.cols,m.days.data)}`:'')+
+ m.brk.map(b=>`<h4>${b.label} breakdown</h4>${st(b.cols,b.data)}`).join('')+
+ `<h4>Loss analysis (${m.lossy.length} leg${m.lossy.length===1?'':'s'} with loss)</h4>${m.lossy.length?st(LOSSC,m.lossy):'<div class="okn">✓ No km loss – every scheduled leg fully operated.</div>'}`+
+ `<h4>Odometer check (tolerance ${CFG.tol} km, abnormal > ${CFG.abn} km)</h4>${m.odoEx.length?st(ODOC,m.odoEx)+`<p class="mut">${m.nOdoOk} other operated leg(s) are within tolerance.</p>`:'<div class="okn">✓ All operated legs have odometer within tolerance.</div>'}`+
+ `<h4>Data issues (${m.iss.length})</h4>${m.iss.length?st(ISSC,m.iss):'<div class="okn">✓ No data-quality issues on these records.</div>'}`;
+}
+
+/* ---------- open / export / print ---------- */
+const tabs=per=>{const ds=dts(),first=ds[0]||'',last=ds[ds.length-1]||'',T=[];
+ if(S.f.date)T.push(['sel','Selected day · '+dmy(S.f.date)]);
+ if(ds.includes(todayISO()))T.push(['today','Today']);else if(S.f.date!==last)T.push(['latest','Latest day · '+dmy(last)]);T.push(['l7','Last 7 days'],['all','All days']);
+ return `<div class="ptabs">${T.map(([m,l])=>`<button class="pt ${per.mode===m?'on':''}" data-ep="${m}">${l}</button>`).join('')}<span class="pc ${per.mode==='custom'?'on':''}">From <input type="date" id="pf" min="${first}" max="${last}" value="${per.mode==='custom'?per.from:first}" aria-label="From date"> to <input type="date" id="pto" min="${first}" max="${last}" value="${per.mode==='custom'?per.to:last}" aria-label="To date"><button data-ep="custom">Apply</button></span></div>`};
+function open(t,k,per){
+ per=per||mkPer(S.f.date?'sel':'all');const m=model(t,k,per);ENT={t,k,per};
+ $('#mb').innerHTML=`<div class="er"><div class="ehd np">${tabs(per)}<div class="tbar"><button class="pri" data-ea="xl">Export Excel</button><button data-ea="pdf">Print / PDF</button><button onclick="$('#md').style.display='none'">Close</button></div></div>${html(m)}</div>`;
+ $('#md').style.display='flex';$('#mb').scrollTop=0;
+}
+function exportXl(){
+ if(!ENT)return;const m=model(ENT.t,ENT.k,ENT.per),k=m.kp,wb=XLSX.utils.book_new();
+ addSheet(wb,'Summary',[[`${TY[m.t][0]} ${m.k} – complete report`],['Depot',S.depot.name],['Period',plabel(m.per)],[],...m.prof.map(p=>[p[0],p[1]]),[],['Scheduled trips',k.schT],['Operated trips',k.opT],['Loss trips',k.lossT],['Scheduled KMs',k.sKm],['Operated KMs',k.oKm],['Loss KMs',k.lossKm],['Odometer KMs',k.odo],['Actual − Odo',k.diff],['Avg start delay (min)',m.avgD==null?'':+m.avgD.toFixed(1)],['Status',k.st],[],['Summary',m.sm.replace(/<[^>]+>/g,'')]]);
+ addSheet(wb,'Leg log',aoa(LOG,m.rs));
+ if(m.days)addSheet(wb,'Day-wise',aoa(m.days.cols,m.days.data));
+ m.brk.forEach(b=>addSheet(wb,b.label,aoa(b.cols,b.data)));
+ addSheet(wb,'Loss',aoa(LOSSC,m.lossy));addSheet(wb,'Odometer exceptions',aoa(ODOC,m.odoEx));addSheet(wb,'Data issues',aoa(ISSC,m.iss));
+ XLSX.writeFile(wb,`${TY[m.t][0]}_${String(m.k).replace(/[^A-Za-z0-9_-]/g,'')}_${slug(S.depot.name)}_${m.per.from}_to_${m.per.to}.xlsx`);
+}
+function printIt(){
+ if(!ENT)return;const m=model(ENT.t,ENT.k,ENT.per);
+ $('#printArea').innerHTML=`<div class="er"><h1>CHAKRA E-TRANS</h1>${html(m)}</div>`;
+ document.body.classList.add('print-cons','print-ent');
+ const done=()=>{document.body.classList.remove('print-cons','print-ent');$('#printArea').innerHTML='';window.removeEventListener('afterprint',done)};
+ window.addEventListener('afterprint',done);setTimeout(()=>{print();setTimeout(done,1500)},150);
+}
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-et]');if(b){open(b.dataset.et,b.dataset.ek);return}
+ const pb=e.target.closest('[data-ep]');if(pb&&ENT){open(ENT.t,ENT.k,mkPer(pb.dataset.ep));return}
+ const a=e.target.closest('[data-ea]');if(a){a.dataset.ea==='xl'?exportXl():printIt()}});
+const _f=window.filters;window.filters=function(){const r=_f.apply(this,arguments);fillList();return r};
+$('#eGo').onclick=go;$('#eq').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go()}});
+window.EntReport={model,html,find,scope,open,mkPer};
+})();
+</script>
+
+</body></html>
