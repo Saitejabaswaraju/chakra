@@ -399,39 +399,18 @@ main>#tabs{grid-column:1;grid-row:1;margin:0;padding:8px;gap:3px;background:line
 <div id="printArea"></div>
 
 <script>
-/* storage.js — persistent browser-side storage (IndexedDB) for CHAKRA E-TRANS.
-   Stores:  depots  (DEPOT_REGISTRY)   keyPath id
-            reports (DOR_REPORTS)      keyPath key = depotId + '|' + reportingDate  (unique per depot + date)
-            meta    (fleet masters etc) keyPath k
-   If IndexedDB is unavailable (some private modes) an in-memory fallback is used and Store.persistent is false. */
+/* storage.js — in-memory only. Nothing is saved to the browser (no IndexedDB / localStorage / DB).
+   All uploaded data lives in page memory and is cleared on refresh or close. */
 'use strict';
 const Store=(()=>{
- const DB_NAME='chakra_etrans_dor',VER=1,KEY={depots:'id',reports:'key',meta:'k'};
- let db=null,useMem=false;
+ const KEY={depots:'id',reports:'key',meta:'k'};
  const mem={depots:new Map(),reports:new Map(),meta:new Map()};
- const api={persistent:true};
- function init(){
-  return new Promise(res=>{
-   if(typeof indexedDB==='undefined'||!indexedDB){useMem=true;api.persistent=false;return res(api)}
-   let q;try{q=indexedDB.open(DB_NAME,VER)}catch(e){useMem=true;api.persistent=false;return res(api)}
-   q.onupgradeneeded=()=>{const d=q.result;
-    if(!d.objectStoreNames.contains('depots'))d.createObjectStore('depots',{keyPath:'id'});
-    if(!d.objectStoreNames.contains('reports')){const s=d.createObjectStore('reports',{keyPath:'key'});s.createIndex('depotId','depotId',{unique:false})}
-    if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta',{keyPath:'k'})};
-   q.onsuccess=()=>{db=q.result;db.onversionchange=()=>{db.close()};
-    try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
-    res(api)};
-   q.onerror=q.onblocked=()=>{useMem=true;api.persistent=false;res(api)};
-  });
- }
- const wrap=r=>new Promise((ok,no)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
- const done=t=>new Promise((ok,no)=>{t.oncomplete=()=>ok();t.onerror=()=>no(t.error);t.onabort=()=>no(t.error||new Error('Store transaction aborted'))});
- async function all(n){if(useMem)return[...mem[n].values()];return wrap(db.transaction(n).objectStore(n).getAll())}
- async function get(n,k){if(useMem)return mem[n].get(k);return wrap(db.transaction(n).objectStore(n).get(k))}
- async function put(n,v){if(useMem){mem[n].set(v[KEY[n]],v);return}const t=db.transaction(n,'readwrite');t.objectStore(n).put(v);return done(t)}
- async function del(n,k){if(useMem){mem[n].delete(k);return}const t=db.transaction(n,'readwrite');t.objectStore(n).delete(k);return done(t)}
- Object.assign(api,{
-  init,
+ const all=async n=>[...mem[n].values()];
+ const get=async(n,k)=>mem[n].get(k);
+ const put=async(n,v)=>{mem[n].set(v[KEY[n]],v)};
+ const del=async(n,k)=>{mem[n].delete(k)};
+ return{
+  init:async()=>{},
   depots:()=>all('depots'),
   saveDepot:d=>put('depots',d),
   reports:async id=>(await all('reports')).filter(r=>r.depotId===id),
@@ -443,8 +422,7 @@ const Store=(()=>{
   setMeta:(k,v)=>put('meta',{k,v}),
   delMeta:k=>del('meta',k),
   reportKey:(depotId,date)=>depotId+'|'+date
- });
- return api;
+ };
 })();
 
 </script>
@@ -908,10 +886,9 @@ async function consolidatedPdf(depIds,dates){
 </script>
 <script>
 /* app.js — CHAKRA E-TRANS: depot registry + DOR reports by depot and date, upload flow (button in the dashboard action bar),
-   depot selector, history, settings, consolidated report. All uploaded data lives in IndexedDB (storage.js). */
+   depot selector, history, settings, consolidated report. All uploaded data is kept in memory only (storage.js). */
 'use strict';
 const APP={depots:[],reports:{},sel:{},fleet:{},cache:{},cur:null};   // reports[depotId] = [report…], sel[depotId] = 'YYYY-MM-DD' | 'ALL', fleet[depotId] = [bus…]
-const SEL_KEY='chakra.dor.sel.v1',CUR_KEY='chakra.dor.cur.v1';
 const depot=id=>APP.depots.find(d=>d.id===id);
 const tick=()=>new Promise(r=>setTimeout(r,30));
 const todayISO=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
@@ -924,8 +901,8 @@ function busy(on,msg){$('#busy').style.display=on?'flex':'none';if(msg)$('#busyM
 function amodal(html){$('#ab').innerHTML=html;$('#am').style.display='flex'}
 function closeAm(){$('#am').style.display='none';$('#ab').innerHTML=''}
 
-/* ---------- state persistence helpers ---------- */
-function saveSel(){try{localStorage.setItem(SEL_KEY,JSON.stringify(APP.sel))}catch(e){}}
+/* ---------- state helpers ---------- */
+function saveSel(){}
 function bump(id){Object.keys(APP.cache).forEach(k=>{if(k.startsWith(id+'|'))delete APP.cache[k]})}
 function setReport(rep){const l=APP.reports[rep.depotId]=(APP.reports[rep.depotId]||[]).filter(r=>r.key!==rep.key);l.push(rep);l.sort((a,b)=>a.date<b.date?-1:1);bump(rep.depotId)}
 const fleetSizeOf=id=>(APP.fleet[id]||[]).length||0;
@@ -970,7 +947,7 @@ async function handleUpload(id,file,expect){
   const bad=made.filter(r=>r.status!=='Processed'),flagged=made.reduce((a,r)=>a+(r.validation?r.validation.flagged:0),0);
   if(bad.length)toast(`${file.name} stored, but required columns are missing — map them under "Column mapping" below.`,'warn',8000);
   else toast(`${d.name}: ${made.length} report${made.length>1?'s':''} processed from ${file.name}${flagged?` — ${flagged} record${flagged>1?'s':''} flagged for verification`:''}.`,flagged?'warn':'ok',6000);
-  if(bad.length||flagged||p.emptyRows||!Store.persistent||made.some(r=>r.validation&&r.validation.excluded))uploadSummary(d,made,p);
+  if(bad.length||flagged||p.emptyRows||made.some(r=>r.validation&&r.validation.excluded))uploadSummary(d,made,p);
  }catch(e){toast('Upload failed: '+e.message,'err',9000)}
  finally{busy(false)}
 }
@@ -979,7 +956,6 @@ function uploadSummary(d,reps,p){
  const tr=reps.map(r=>{const v=r.validation;return v?[dmy(r.date),r.status,v.records,v.excluded,v.emptyRows,v.missingBus,v.missingSvc,v.missingDepot,v.missingDriver,v.invalidDate,v.formulaErr,v.kmIssues,v.duplicates,v.flagged]:[dmy(r.date),r.status+' – missing: '+(r.missing||[]).map(k=>LBL[k]).join(', '),'','','','','','','','','','','','']});
  const notes=[];
  if(p.noSheet)notes.push(`No worksheet named "Dor" was found; "${esc(p.sheet)}" was used.`);
- if(!Store.persistent)notes.push('Browser storage (IndexedDB) is unavailable, so reports will be lost when this page is closed.');
  notes.push('Nothing is discarded: flagged rows stay in the dashboard and are listed under Data Quality. Empty rows and blank/total rows (no service and no bus number) are excluded from calculations.');
  amodal(`<h3>Upload summary – ${esc(d.name)}</h3><p class="mut">${esc(p.file)} · sheet ${esc(p.sheet)}</p><div class="tw"><table><thead><tr>${th.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${tr.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${notes.map(n=>`<p class="mut">${n}</p>`).join('')}<p class="mact"><button class="pri" data-act="close">OK</button></p>`);
 }
@@ -1048,14 +1024,14 @@ function renderCons(){
 /* ---------- NAVIGATION (depot selector + #/depot/<id>) ---------- */
 function showDepot(id){
  const d=depot(id);if(!d)return;
- APP.cur=id;try{localStorage.setItem(CUR_KEY,id)}catch(e){}
+ APP.cur=id;
  document.title=d.name+' – CHAKRA E-TRANS';
  const s=APP.sel[id];
  loadDepot({depot:d,reports:APP.reports[id]||[],fleet:APP.fleet[id]||null,ctx:Engine.makeCtx(d.config),date:s==='ALL'?'':s});
 }
 function route(){
  const m=location.hash.match(/^#\/depot\/(.+)$/);let id=m?decodeURIComponent(m[1]):null;
- if(!id||!depot(id)){let sv=null;try{sv=localStorage.getItem(CUR_KEY)}catch(e){}id=depot(sv)?sv:(APP.depots[0]&&APP.depots[0].id)}
+ if(!id||!depot(id)){id=APP.depots[0]&&APP.depots[0].id}
  if(id)showDepot(id);
 }
 function openDepot(id,date){
@@ -1104,10 +1080,9 @@ Hooks.onFleet=async arr=>{const id=S.depot.id;if(arr&&arr.length){APP.fleet[id]=
 
 /* ---------- STARTUP ---------- */
 async function init(){
- busy(true,'Loading stored reports…');
+ busy(true,'Loading…');
  try{
   await Store.init();
-  if(!Store.persistent)$('#banner').innerHTML='<div class="warn">Browser storage (IndexedDB) is not available in this browser mode — uploaded reports will not survive a refresh.</div>';
   let ds=await Store.depots();
   if(!ds.length){ds=[1,2,3].map(n=>({id:'depot-'+n,name:'Depot '+n,order:n,config:Engine.defaultConfig()}));for(const d of ds)await Store.saveDepot(d)}
   let madeKP=false;if(!ds.some(d=>/kukatpally/i.test(d.name))){const kp={id:'kukatpally-depot',name:'Kukatpally Depot',order:ds.length+1,config:Object.assign(Engine.defaultConfig(),{home:'KP',homeAliases:'kp,kukatpally'})};await Store.saveDepot(kp);ds.push(kp);madeKP=true}
@@ -1116,8 +1091,7 @@ async function init(){
   (await Store.allReports()).forEach(r=>{(APP.reports[r.depotId]=APP.reports[r.depotId]||[]).push(r)});
   Object.values(APP.reports).forEach(l=>l.sort((a,b)=>a.date<b.date?-1:1));
   for(const d of ds){const f=await Store.getMeta('fleet:'+d.id);if(f&&f.length)APP.fleet[d.id]=f}
-  let saved={};try{saved=JSON.parse(localStorage.getItem(SEL_KEY)||'{}')}catch(e){}
-  ds.forEach(d=>{const s=saved[d.id],has=(APP.reports[d.id]||[]).some(r=>r.date===s);APP.sel[d.id]=(s==='ALL'||(ISO.test(s||'')&&has))?s:defaultSel(d.id)});
+  ds.forEach(d=>{APP.sel[d.id]=defaultSel(d.id)});
   wire();route();if(madeKP)openDepot('kukatpally-depot');
  }catch(e){toast('Startup problem: '+e.message,'err',10000)}
  finally{busy(false)}
